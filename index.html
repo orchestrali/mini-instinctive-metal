@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Change Ringing Tools</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" 
+      type="image/png" 
+      href="https://sallyandbobminor.wordpress.com/wp-content/uploads/2025/07/bristol-major-short.png">
+    
+    
+    
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>
+          Change Ringing Tools
+        </h1>
+        <h4>
+          Built by <a href="https://www.alisonnicole.com" target="blank">Alison Stevens</a> • Support this project on <a href="https://www.patreon.com/alisons" target="blank">Patreon</a> • Check out my embroidered method bookmarks on <a href="https://www.etsy.com/shop/RingingEmbroidery" target="blank">Etsy</a>
+        </h4>
+      </div>
+    </header>
+    
+    <main>
+      <div id="nav-options">
+        
+      </div>
+      
+      <h3>
+        Look up a method
+      </h3>
+      
+      <!--button for complib id instead would go here-->
+      
+      <form action="/" method="get" autocomplete="off" id="formform">
+        
+        <div id="method-info" class="category">
+          <p class="bold">
+            Method info
+          </p>
+          <div class="input">
+            <span id="stagespan">
+              <label for="stage">
+                Stage:
+              </label>
+              <select id="stage" name="stage" required>
+                <option value disabled selected>required</option>
+                <option value="4">4 - Minimus</option>
+                <option value="5">5 - Doubles</option>
+                <option value="6">6 - Minor</option>
+                <option value="7">7 - Triples</option>
+                <option value="8">8 - Major</option>
+                <option value="9">9 - Caters</option>
+                <option value="10">10 - Royal</option>
+                <option value="11">11 - Cinques</option>
+                <option value="12">12 - Maximus</option>
+                <option value="13">13 - Sextuples</option>
+                <option value="14">14 - Fourteen</option>
+                <option value="15">15 - Septuples</option>
+                <option value="16">16 - Sixteen</option>
+              </select>
+            </span>
+            <span>
+              <label for="methodClass">
+                Method class:
+              </label>
+              <select id="methodClass" name="methodClass" >
+              </select>
+            </span>
+          </div>
+          <div class="input" id="methodSearch">
+
+            <label for="methodName">
+              Search for a method:
+            </label>
+            <div>
+              <input type="text" id="methodName" name="methodName" placeholder="Select a stage and class to search methods" autocomplete="off"/>
+              <ul id="methodList">
+              </ul>
+            </div>
+          </div>
+          <!--<div class="input">
+            <label for="placeNotation">
+              Place notation:
+            </label>
+            <input type="text" id="placeNotation" name="placeNotation" minlength="1" autocomplete="off" placeholder="Or select stage and enter place notation here"/>
+          </div>-->
+        </div>
+        <div id="gridopts" class="type">
+          <p class="bold">
+            Display options
+          </p>
+          <p>
+            <input type="checkbox" checked id="show-nums" name="numbers" value="show" />
+            <label for="numbers">Show numbers</label>
+          </p>
+          <p>
+            <label for="blueBell">
+              Draw path for bell:
+            </label>
+            <select id="blueBell" name="blueBell" class="blueBell">
+              
+            </select>
+          </p>
+          <div class="input">
+            <input type="checkbox" id="describe" name="describe" value="show" />
+            <label for="describe">Show description of the blue line</label>
+          </div>
+        </div>
+        <button type="button" id="submit">Submit</button>
+      </form>
+      <div id="container">
+        
+      </div>
+    </main>
+    
+    <script
+  src="https://code.jquery.com/jquery-3.6.0.min.js"
+  integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+  crossorigin="anonymous"></script>
+    <script src="jquery.svg.js"></script>
+    <script src="jquery.svgdom.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
