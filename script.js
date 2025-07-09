@@ -23,6 +23,12 @@ $(function(){
     svg = o;
     svg.configure({xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink", width: 0, height: 0});
   }});
+
+  //nav toggle
+  $("#nav-options").click(function() {
+    $("#nav-options ul").slideToggle(600, "swing");
+    $(".arrow").toggleClass("rotate");
+  });
   
   $("#stage").change(stagechange);
   $('#methodClass').change(classchange);
