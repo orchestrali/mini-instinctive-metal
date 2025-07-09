@@ -107,6 +107,46 @@
   .hidden.category, .hidden {
     display: none;
   }
+
+  /* nav styling */
+  #nav-options {
+    background-color: aliceblue;
+    color: darkslateblue;
+    max-width: 300px;
+    margin-bottom: 20px;
+  }
+
+  #nav-options p {
+    width: 80%;
+    margin: 8px 8px;
+    display: inline-block;
+  }
+  #nav-options li a {
+    color: darkslateblue;
+    text-decoration: none;
+  }
+
+  #nav-options ul {
+    margin-top: 0;
+    padding-bottom: 8px;
+    display: none;
+  }
+
+  .arrow {
+    width: 0;
+    height: 0;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-right: 8px solid steelblue;
+    margin-right: 8px;
+    margin-top: 8px;
+    display: inline-block;
+    transition: transform 600ms ease;
+  }
+
+  .rotate {
+    transform: rotate(-90deg);
+  }
   
   /* FORM STYLING */
   
