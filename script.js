@@ -522,7 +522,16 @@ function findmethod(obj) {
 
 //build row array
 function buildrowarr() {
-  buildplaincourse(stage, method.plainPN);
+  switch (queryobj.quantity) {
+    case "onelead":
+      rowArray = buildRows(rounds(stage), method.plainPN, 0);
+      break;
+    case "touch":
+      // stuff here later
+      break;
+    default:
+      buildplaincourse(stage, method.plainPN);
+  }
   let stagename = getStageName(stage);
   let stedman = method.name === "Stedman "+stagename;
   if (stedman) {
