@@ -217,5 +217,48 @@
   }
 }
 
+@media print {
+  header {
+    display: none;
+  }
 
+  body {
+    font-family: helvetica, arial, sans-serif;
+    margin: 25px;
+  }
+
+  div#form {
+    display: none;
+  }
+
+  svg.contain {
+    width: 25%;
+    height: auto;
+    break-inside: avoid-page;
+    margin-bottom: 40px;
+  }
+  
+  div.grid-container {
+    display: inline-block;
+  }
+  
+  div.grid {
+    float: left;
+  /*height: 850px;*/
+  }
+  
+  
+  div.pageN {
+    margin-top: 100px;
+  }
+  
+  
+  svg svg {
+    width: 16.6%;
+  }
+  
+  footer {
+    display: none;
+  }
+}
 
