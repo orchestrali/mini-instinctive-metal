@@ -1,19 +1,35 @@
+//bell places
 const places = "1234567890ETABCD";
+//holds stages.json; stage number and name and classes within
 var stages;
-var type = "grid";
-let gridtype = "basic-lines";
-var stage, checkedClass;
-let mode = "methods";
-var bigmethodarr;
-
+//sorted list of method names
 var methodNameList;
+//full method collection
+var bigmethodarr;
+//holder for jquery/svg functions
+var svg;
+//type of display: grid, graph, staff, practice, simulator
+var type = "grid";
+//grid display options: basic-lines, everyline, bellgroups
+let gridtype = "basic-lines";
+
+//strategies for choosing method/comp
+//default "name", others "pn" and "complib"
+var lookup = "name";
+//method stage and class set by form
+var stage, checkedClass;
+
+
+//set of method names matching selected stage and class
 let methodList;
 
-var svg;
+//form submission
+var queryobj;
+
 var method;
 var rowArray;
 var blueBell;
-var queryobj;
+
 
 
 $(function(){
