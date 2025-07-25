@@ -833,7 +833,7 @@ function pnlexer(pn, pnstage) {
 	let stagepp = places.slice(0,pnstage);
 	let tokens = [];
 	let err;
-
+	
 	for (let i = 0; i < pn.length; i++) {
 		let token = {
 			value: pn[i]
@@ -857,7 +857,7 @@ function pnlexer(pn, pnstage) {
 			err = "invalid character";
 		}
 	}
-
+	
 	return [err, tokens];
 }
 
