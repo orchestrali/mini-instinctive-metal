@@ -47,6 +47,11 @@ $(function(){
   });
   
   $("#stage").change(stagechange);
+
+	$("#lookupstrat").change(changestrategy);
+	
+	$("#placeNotation").on("keyup", pnkeyup);
+	
   $('#methodClass').change(classchange);
   $("#methodName").click(methodnameclick);
   //when a method in the dropdown list is clicked on, make it the methodName value and hide the list
