@@ -140,6 +140,81 @@ function stagechange() {
   */
 }
 
+//switch between method name, pn, or complib
+function changestrategy() {
+  let prev = lookup;
+  lookup = $("#lookupstrat input:checked").val();
+  
+  $("div.searchstrategy").find(":input").prop("disabled", true);
+  $("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
+  
+  $("div#searchby"+prev).slideUp(600, () => {
+    $("div#searchby"+lookup).slideDown(600);
+  });
+}
+
+function pnkeyup() {
+	$("#pnerrors").text("");
+  let allowed = ".,x-&+";
+  let errs = [];
+  let val = $(this).val();
+  let chars = $(this).val().split("").map(c => {
+    if ("etabcd".includes(c)) {
+      return c.toUpperCase();
+    } else if (c === "X") {
+      return "x";
+    } else {
+      return c;
+    }
+  });
+
+	//stage needs to be specified
+	if (!stage) {
+    //shouldn't be possible
+		errs.push("make sure to select a stage!");
+	} else {
+		allowed += places.slice(0,stage);
+	}
+	//unrecognized character, includes places outside stage
+	if (chars.find(c => !allowed.includes(c))) {
+		errs.push("unrecognized character in place notation");
+	}
+  //no x or - on odd stages
+	let cross = chars.includes("x") ? "x" : chars.includes("-") ? "-" : null;
+	if (stage%2 === 1 && cross) {
+		errs.push(cross + " not allowed on odd stages");
+	}
+	//consecutive x or - okay but no other consecutives
+	let pairs = chars.slice(0, chars.length-1);
+	for (let i = 0; i < pairs.length; i++) {
+		pairs[i] += chars[i+1];
+	}
+	let filter = pairs.filter(p => p[0] === p[1] && !["x","-"].includes(p[0]));
+	if (filter.length) {
+		errs.push("repeated "+filter[0][0]+" not allowed");
+	}
+	//first character can't be , or .
+	if ([",","."].includes(chars[0])) {
+		errs.push("can't begin with "+chars[0]);
+	}
+
+	if (errs.length) {
+		//display them
+    errs.forEach(e => {
+      $("#pnerrors").append(`<p>${e}</p>`);
+    });
+	} else {
+    let res = pnlexer(chars.join(""));
+		//shouldn't be any errors...
+		let next = pnNumJoin(res[1]);
+		if (next[0]) {
+			//display errors
+      $("#pnerrors").append(`<p>${next[0]}</p>`);
+		}
+  }
+	
+}
+
 function classchange() {
   stage = Number($('select#stage option:checked').val());
   checkedClass = $('select#methodClass option:checked').val();
