@@ -17,7 +17,8 @@ let gridtype = "basic-lines";
 //default "name", others "pn" and "complib"
 var lookup = "name";
 //method stage and class set by form
-var stage, checkedClass;
+var stage = null;
+var checkedClass;
 
 
 //set of method names matching selected stage and class
@@ -47,6 +48,11 @@ $(function(){
   });
   
   $("#stage").change(stagechange);
+
+	$("#lookupstrat").change(changestrategy);
+	
+	$("#placeNotation").on("keyup", pnkeyup);
+	
   $('#methodClass').change(classchange);
   $("#methodName").click(methodnameclick);
   //when a method in the dropdown list is clicked on, make it the methodName value and hide the list
@@ -87,6 +93,8 @@ function stagechange() {
   stage = Number($('select#stage option:checked').val());
   //console.log("stage: ", stage);
   checkedClass = "";
+
+	$("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
   
   //remove methods from name dropdown
   $('ul#methodList').children().detach();
@@ -138,6 +146,81 @@ function stagechange() {
   }
   
   */
+}
+
+//switch between method name, pn, or complib
+function changestrategy() {
+  let prev = lookup;
+  lookup = $("#lookupstrat input:checked").val();
+  
+  $("div.searchstrategy").find(":input").prop("disabled", true);
+  $("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
+  
+  $("div#searchby"+prev).slideUp(600, () => {
+    $("div#searchby"+lookup).slideDown(600);
+  });
+}
+
+function pnkeyup() {
+	$("#pnerrors").text("");
+  let allowed = ".,x-&+";
+  let errs = [];
+  let val = $(this).val();
+  let chars = $(this).val().split("").map(c => {
+    if ("etabcd".includes(c)) {
+      return c.toUpperCase();
+    } else if (c === "X") {
+      return "x";
+    } else {
+      return c;
+    }
+  });
+
+	//stage needs to be specified
+	if (!stage) {
+    //shouldn't be possible
+		errs.push("make sure to select a stage!");
+	} else {
+		allowed += places.slice(0,stage);
+	}
+	//unrecognized character, includes places outside stage
+	if (chars.find(c => !allowed.includes(c))) {
+		errs.push("unrecognized character in place notation");
+	}
+  //no x or - on odd stages
+	let cross = chars.includes("x") ? "x" : chars.includes("-") ? "-" : null;
+	if (stage%2 === 1 && cross) {
+		errs.push(cross + " not allowed on odd stages");
+	}
+	//consecutive x or - okay but no other consecutives
+	let pairs = chars.slice(0, chars.length-1);
+	for (let i = 0; i < pairs.length; i++) {
+		pairs[i] += chars[i+1];
+	}
+	let filter = pairs.filter(p => p[0] === p[1] && !["x","-"].includes(p[0]));
+	if (filter.length) {
+		errs.push("repeated "+filter[0][0]+" not allowed");
+	}
+	//first character can't be , or .
+	if ([",","."].includes(chars[0])) {
+		errs.push("can't begin with "+chars[0]);
+	}
+
+	if (errs.length) {
+		//display them
+    errs.forEach(e => {
+      $("#pnerrors").append(`<p>${e}</p>`);
+    });
+	} else {
+    let res = pnlexer(chars.join(""));
+		//shouldn't be any errors...
+		let next = pnNumJoin(res[1]);
+		if (next[0]) {
+			//display errors
+      $("#pnerrors").append(`<p>${next[0]}</p>`);
+		}
+  }
+	
 }
 
 function classchange() {
@@ -496,7 +579,11 @@ function submitform() {
   queryobj = {};
   
   for (let key of data.entries()) {
-    queryobj[key[0]] = key[1];
+		if (key[0] === "stage") {
+			queryobj[key[0]] = Number(key[1]);
+		} else {
+			queryobj[key[0]] = key[1];
+		}
   }
   
   resultsrouter(queryobj);
@@ -504,16 +591,24 @@ function submitform() {
 
 function resultsrouter(obj) {
   $("#container").contents().remove();
-  method = findmethod(obj);
-  if (method) {
+  //get row array
+  let title;
+  //different process for method name or place notation
+  switch (obj.lookup) {
+    case "name":
+      title = routermethod(obj);
+      break;
+    case "pn":
+      title = routerpn(obj);
+      break;
+  }
+  //do stuff with it
+  
+  
+  if (title) {
     //console.log(method.hunts);
-    let stagename = getStageName(obj.stage);
-    if (method.name === "Stedman "+stagename) {
-      method.stedman = true;
-    }
-    let title = method.name + " - plain course";
     $("#container").append("<h1>"+title+"</h1>");
-    buildrowarr();
+    
     if (queryobj.blueBell != "auto") {
       blueBell = Number(queryobj.blueBell);
     }
@@ -522,8 +617,48 @@ function resultsrouter(obj) {
     drawgrid(pbs);
     
   } else {
-    $("#container").append(`<h4>Method not found</h4>`);
+    let text = obj.lookup === "name" ? "Method not found" : "Problem with place notation";
+    $("#container").append(`<h4>${text}</h4>`);
   }
+}
+
+function routermethod(obj) {
+  method = findmethod(obj);
+  let title;
+  if (method) {
+    let stagename = getStageName(obj.stage);
+    if (method.name === "Stedman "+stagename) {
+      method.stedman = true;
+    }
+    title = method.name; //+ " - plain course";
+    buildrowarr();
+  }
+  return title;
+}
+
+function routerpn(obj) {
+  let res = parsePN(obj.placeNotation, obj.stage);
+  let title;
+	//console.log(res);
+  if (res[0]) {
+    //error
+  } else {
+    let pn = res[1];
+    let m = findbypn(pn, obj.stage);
+    if (m) {
+      method = m;
+      title = method.name;
+    } else {
+      method = {
+        stage: obj.stage,
+        leadLength: pn.length,
+        plainPN: pn
+      };
+      title = obj.placeNotation;
+    }
+    buildrowarr();
+  }
+  return title;
 }
 
 //get more method info
@@ -540,17 +675,16 @@ function findmethod(obj) {
 function buildrowarr() {
   switch (queryobj.quantity) {
     case "onelead":
-      rowArray = buildRows(rounds(stage), method.plainPN, 0);
+      rowArray = buildRows(rounds(method.stage), method.plainPN, 0);
       break;
     case "touch":
       // stuff here later
       break;
     default:
-      buildplaincourse(stage, method.plainPN);
+      buildplaincourse(method.stage, method.plainPN);
   }
-  let stagename = getStageName(stage);
-  let stedman = method.name === "Stedman "+stagename;
-  if (stedman) {
+  
+  if (method.stedman) {
     addLHs(6, 3, "new six");
   }
   addLHs(method.leadLength, 0, "leadhead");
@@ -778,15 +912,204 @@ function rounds(numBells) {
 
 //convert row array to string
 function rowStr(row) {
-  let str = "";
-  
-  for (var i = 0; i < row.length; i++) {
-    str += places[row[i]-1];
-  }
-  
+  let str = row.map(n => places[n-1]).join("");
   return str;
 }
 
+//categorize tokens in supposed place notation
+function pnlexer(pn, pnstage) {
+	let stagepp = places.slice(0,pnstage);
+	let tokens = [];
+	let err;
+	
+	for (let i = 0; i < pn.length; i++) {
+		let token = {
+			value: pn[i]
+		};
+		switch (pn[i]) {
+			case "&": case ",": case "+":
+				token.type = "grouping token";
+				break;
+			case ".":
+				token.type = "separator";
+				break;
+			case "x": case "-":
+				token.type = "all change";
+				break;
+			default:
+				if (stagepp.includes(pn[i])) token.type = "number";
+		}
+		if (token.type) {
+			tokens.push(token);
+		} else {
+			err = "invalid character";
+		}
+	}
+	
+	return [err, tokens];
+}
+
+function pnNumJoin(tokens) {
+	let arrnj = [];
+	let prevtype = "all change";
+	let prev = "x";
+	let err;
+
+	//add tokens except separator to new array; if consecutive numbers combine them
+	for (let i = 0; i < tokens.length; i++) {
+		let t = tokens[i].type;
+		if (t === "number" && prevtype === "number") {
+			let diff = places.indexOf(tokens[i].value) - places.indexOf(prev);
+			if (arrnj[arrnj.length-1].value.includes(tokens[i].value)) {
+				err = "repeated place????";
+			} else if (places.indexOf(tokens[i].value) < places.indexOf(prev)) {
+				err = "numbers out of order";
+			} else if (diff > 2 && diff%2 === 0) {
+				err = "missing internal place?";
+			}
+			arrnj[arrnj.length-1].value += tokens[i].value;
+			prev = tokens[i].value;
+		} else if (t === "separator") {
+			prevtype = "separator";
+			prev = ".";
+		} else {
+			arrnj.push(tokens[i]);
+			prevtype = t;
+			prev = tokens[i].value;
+		}
+	}
+
+	return [err, arrnj];
+}
+
+function pnNumAbbr(tokens, pnstage) {
+	//do stuff with the objects of type 'number'
+	for (let i = 0; i < tokens.length; i++) {
+		let t = tokens[i];
+		if (t.type === "number") {
+			//turn value string into array of characters, convert strings in array to numbers
+			let numArr = t.value.split("").map(n => places.indexOf(n)+1);
+
+			//odd AND even bell methods:
+        //if the value begins with an even number, add 1 to beginning
+			if (numArr[0] % 2 === 0) {
+				numArr.unshift(1);
+			}
+				//if consecutive places only have one place between, add that place
+			if (numArr.length > 1) {
+				for (let j = numArr.length-2; j > -1; j--) {
+					if (numArr[j+1] - numArr[j] === 2) {
+						numArr.splice(j+1, 0, numArr[j]+1);
+					}
+				}
+			}
+			
+      //if the value ends with the opposite quality from the stage, add stage to end
+      if (stage%2 != numArr[numArr.length-1] % 2) {
+      	numArr.push(pnstage);
+      }
+      t.value = numArr;
+    }
+	}
+}
+
+
+function pngrouping(tokens) {
+	let groupingString = tokens.filter(t => t.type === "grouping token").map(t => t.value).join("");
+
+	if (!["","+"].includes(groupingString)) {
+		let groupingTokens = [];
+		for (let i = 0; i < tokens.length; i++) {
+			if (tokens[i].type === "grouping token") {
+				groupingTokens.push({index: i, token: tokens[i].value});
+			}
+		}
+		let mirrorStart;
+		let mirrorEnd = 0;
+		let insertIndex;
+		let numToReplace;
+		let toBeReversed;
+		switch (groupingString) {
+			case ",":
+				let greater = groupingTokens[0].index > 1;
+
+				mirrorStart = greater ? 0 : 2;
+				mirrorEnd = greater ? groupingTokens[0].index-1 : tokens.length-1;
+				insertIndex = greater ? groupingTokens[0].index+1 : tokens.length;
+				break;
+			case "&,": case "&,+":
+				mirrorStart = groupingTokens[0].index+1;
+				mirrorEnd = groupingTokens[1].index-1;
+				insertIndex = mirrorEnd+2;
+				break;
+			case "+,": case "+,&":
+				let j = groupingString === "+," ? 1 : 2;
+				mirrorStart = groupingTokens[j].index+1;
+				mirrorEnd = tokens.length - 1;
+				insertIndex = tokens.length;
+				break;
+		}
+
+		if (mirrorEnd === 0) {
+			toBeReversed = tokens.slice(mirrorStart);
+		} else {
+			toBeReversed = tokens.slice(mirrorStart, mirrorEnd);
+		}
+
+		toBeReversed.reverse();
+
+		for (let j = 0; j < toBeReversed.length; j++) {
+			tokens.splice(insertIndex+j, 0, toBeReversed[j]);
+		}
+	}
+}
+
+function parsePN(pn, pnstage) {
+	let res = pnlexer(pn, pnstage);
+
+	if (res[0]) {
+		return res;
+	} else {
+		res = pnNumJoin(res[1]);
+		if (res[0]) {
+			return res;
+		} else {
+			let tokens = res[1];
+			pnNumAbbr(tokens, pnstage);
+			pngrouping(tokens);
+			return [null, tokens.filter(t => t.type !== "grouping token").map(t => t.value)];
+		}
+	}
+}
+
+//take my processed pn and make a string
+function pnstring(pn) {
+	let str = "";
+	let nums;
+	pn.forEach(e => {
+		if (e === "x") {
+			str += "-";
+			nums = false;
+		} else {
+			if (nums) str += ".";
+			str += rowStr(e);
+			nums = true;
+		}
+	});
+	return str;
+}
+
+function findbypn(pn, pnstage) {
+  let pnstr = pnstring(pn);
+  let possible = bigmethodarr.filter(m => m.stage === pnstage && m.leadLength === pn.length);
+  let match = possible.find(m => pnstring(m.plainPN) === pnstr);
+  return match;
+}
+
+//choose one or more working bells to display lines for
+//n will be 1 if description is being shown, otherwise 2
+//allows one working bell from each cycle if there is more than one working cycle
+//attempts to choose palindromic bell
 function chooseworking(n) {
   let used = [];
   method.hunts.forEach(b => used.push(b));
