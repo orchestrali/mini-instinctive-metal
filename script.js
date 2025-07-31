@@ -579,7 +579,11 @@ function submitform() {
   queryobj = {};
   
   for (let key of data.entries()) {
-    queryobj[key[0]] = key[1];
+		if (key[0] === "stage") {
+			queryobj[key[0]] = Number(key[1]);
+		} else {
+			queryobj[key[0]] = key[1];
+		}
   }
   
   resultsrouter(queryobj);
@@ -1073,7 +1077,7 @@ function parsePN(pn, pnstage) {
 			let tokens = res[1];
 			pnNumAbbr(tokens, pnstage);
 			pngrouping(tokens);
-			return [null, tokens];
+			return [null, tokens.filter(t => t.type !== "grouping token").map(t => t.value)];
 		}
 	}
 }
