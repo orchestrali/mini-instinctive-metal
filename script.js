@@ -17,7 +17,8 @@ let gridtype = "basic-lines";
 //default "name", others "pn" and "complib"
 var lookup = "name";
 //method stage and class set by form
-var stage, checkedClass;
+var stage = null;
+var checkedClass;
 
 
 //set of method names matching selected stage and class
