@@ -634,6 +634,7 @@ function routermethod(obj) {
 function routerpn(obj) {
   let res = parsePN(obj.placeNotation, obj.stage);
   let title;
+	console.log(res);
   if (res[0]) {
     //error
   } else {
