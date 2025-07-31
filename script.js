@@ -92,6 +92,8 @@ function stagechange() {
   stage = Number($('select#stage option:checked').val());
   //console.log("stage: ", stage);
   checkedClass = "";
+
+	$("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
   
   //remove methods from name dropdown
   $('ul#methodList').children().detach();
