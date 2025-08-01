@@ -609,17 +609,22 @@ function resultsrouter(obj) {
     //console.log(method.hunts);
     $("#container").append("<h1>"+title+"</h1>");
     
-    if (queryobj.blueBell != "auto") {
-      blueBell = Number(queryobj.blueBell);
+    if (obj.blueBell != "auto") {
+      blueBell = Number(obj.blueBell);
     }
     
-    let pbs = !method.stedman || method.leadLength > 3;
+    let pbs = !method.stedman && method.leadLength > 3;
     drawgrid(pbs);
     
   } else {
     let text = obj.lookup === "name" ? "Method not found" : "Problem with place notation";
     $("#container").append(`<h4>${text}</h4>`);
   }
+}
+
+function routergrid(obj) {
+	//different grid display options
+	
 }
 
 function routermethod(obj) {
@@ -787,6 +792,11 @@ function buildpaths() {
   return paths;
 }
 
+function drawgridgrid() {
+	let width = rowArray[0].bells.length*16 + 38;
+  let x = 40;
+	
+}
 
 function drawgrid(pbs) {
   
@@ -918,15 +928,15 @@ function rowStr(row) {
 
 //categorize tokens in supposed place notation
 function pnlexer(pn, pnstage) {
-	let stagepp = places.slice(0,pnstage);
-	let tokens = [];
-	let err;
-	
-	for (let i = 0; i < pn.length; i++) {
-		let token = {
-			value: pn[i]
-		};
-		switch (pn[i]) {
+  let stagepp = places.slice(0,pnstage);
+  let tokens = [];
+  let err;
+  
+  for (let i = 0; i < pn.length; i++) {
+    let token = {
+      value: pn[i]
+    };
+    switch (pn[i]) {
 			case "&": case ",": case "+":
 				token.type = "grouping token";
 				break;
