@@ -657,7 +657,8 @@ function routerpn(obj) {
       method = {
         stage: obj.stage,
         leadLength: pn.length,
-        plainPN: pn
+        plainPN: pn,
+				hunts: findhunts(pn, obj.stage)
       };
       title = obj.placeNotation;
     }
@@ -924,6 +925,20 @@ function rounds(numBells) {
 function rowStr(row) {
   let str = row.map(n => places[n-1]).join("");
   return str;
+}
+
+//given pn find hunt bells
+function findhunts(pn, pnstage) {
+	let start = rounds(pnstage);
+	let lead = buildRows(start, pn, 1);
+	let last = lead[lead.length-1].bells;
+	let hunts = [];
+	for (let i = 0; i < pnstage; i++) {
+		if (last[i] === i+1) {
+			hunts.push(i+1);
+		}
+	}
+	return hunts;
 }
 
 //categorize tokens in supposed place notation
