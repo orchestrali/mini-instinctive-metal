@@ -49,9 +49,9 @@ $(function(){
   
   $("#stage").change(stagechange);
 
-	$("#lookupstrat").change(changestrategy);
+  $("#lookupstrat").change(changestrategy);
 	
-	$("#placeNotation").on("keyup", pnkeyup);
+  $("#placeNotation").on("keyup", pnkeyup);
 	
   $('#methodClass').change(classchange);
   $("#methodName").click(methodnameclick);
@@ -94,7 +94,7 @@ function stagechange() {
   //console.log("stage: ", stage);
   checkedClass = "";
 
-	$("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
+  $("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
   
   //remove methods from name dropdown
   $('ul#methodList').children().detach();
@@ -162,7 +162,7 @@ function changestrategy() {
 }
 
 function pnkeyup() {
-	$("#pnerrors").text("");
+  $("#pnerrors").text("");
   let allowed = ".,x-&+";
   let errs = [];
   let val = $(this).val();
@@ -176,49 +176,49 @@ function pnkeyup() {
     }
   });
 
-	//stage needs to be specified
-	if (!stage) {
+  //stage needs to be specified
+  if (!stage) {
     //shouldn't be possible
-		errs.push("make sure to select a stage!");
-	} else {
-		allowed += places.slice(0,stage);
-	}
-	//unrecognized character, includes places outside stage
-	if (chars.find(c => !allowed.includes(c))) {
-		errs.push("unrecognized character in place notation");
-	}
+    errs.push("make sure to select a stage!");
+  } else {
+    allowed += places.slice(0,stage);
+  }
+  //unrecognized character, includes places outside stage
+  if (chars.find(c => !allowed.includes(c))) {
+    errs.push("unrecognized character in place notation");
+  }
   //no x or - on odd stages
-	let cross = chars.includes("x") ? "x" : chars.includes("-") ? "-" : null;
-	if (stage%2 === 1 && cross) {
-		errs.push(cross + " not allowed on odd stages");
-	}
-	//consecutive x or - okay but no other consecutives
-	let pairs = chars.slice(0, chars.length-1);
-	for (let i = 0; i < pairs.length; i++) {
-		pairs[i] += chars[i+1];
-	}
-	let filter = pairs.filter(p => p[0] === p[1] && !["x","-"].includes(p[0]));
-	if (filter.length) {
-		errs.push("repeated "+filter[0][0]+" not allowed");
-	}
-	//first character can't be , or .
-	if ([",","."].includes(chars[0])) {
-		errs.push("can't begin with "+chars[0]);
-	}
+  let cross = chars.includes("x") ? "x" : chars.includes("-") ? "-" : null;
+  if (stage%2 === 1 && cross) {
+    errs.push(cross + " not allowed on odd stages");
+  }
+  //consecutive x or - okay but no other consecutives
+  let pairs = chars.slice(0, chars.length-1);
+  for (let i = 0; i < pairs.length; i++) {
+    pairs[i] += chars[i+1];
+  }
+  let filter = pairs.filter(p => p[0] === p[1] && !["x","-"].includes(p[0]));
+  if (filter.length) {
+    errs.push("repeated "+filter[0][0]+" not allowed");
+  }
+  //first character can't be , or .
+  if ([",","."].includes(chars[0])) {
+    errs.push("can't begin with "+chars[0]);
+  }
 
-	if (errs.length) {
-		//display them
+  if (errs.length) {
+    //display them
     errs.forEach(e => {
       $("#pnerrors").append(`<p>${e}</p>`);
     });
-	} else {
+  } else {
     let res = pnlexer(chars.join(""));
-		//shouldn't be any errors...
-		let next = pnNumJoin(res[1]);
-		if (next[0]) {
-			//display errors
+    //shouldn't be any errors...
+    let next = pnNumJoin(res[1]);
+    if (next[0]) {
+    //display errors
       $("#pnerrors").append(`<p>${next[0]}</p>`);
-		}
+    }
   }
 	
 }
@@ -242,9 +242,9 @@ function classchange() {
 
 function hidenamelist() {
   $(document.body).on('click.menuHide', function(){
-      var $body = $(this);
-      $("#methodList li").hide();
-      $body.off('click.menuHide');
+    var $body = $(this);
+    $("#methodList li").hide();
+    $body.off('click.menuHide');
   });
 }
 
@@ -579,11 +579,11 @@ function submitform() {
   queryobj = {};
   
   for (let key of data.entries()) {
-		if (key[0] === "stage") {
-			queryobj[key[0]] = Number(key[1]);
-		} else {
-			queryobj[key[0]] = key[1];
-		}
+    if (key[0] === "stage") {
+      queryobj[key[0]] = Number(key[1]);
+    } else {
+      queryobj[key[0]] = key[1];
+    }
   }
   
   resultsrouter(queryobj);
@@ -623,7 +623,7 @@ function resultsrouter(obj) {
 }
 
 function routergrid(obj) {
-	//different grid display options
+  //different grid display options
 	
 }
 
@@ -794,7 +794,7 @@ function buildpaths() {
 }
 
 function drawgridgrid() {
-	let width = rowArray[0].bells.length*16 + 38;
+  let width = rowArray[0].bells.length*16 + 38;
   let x = 40;
 	
 }
@@ -916,8 +916,8 @@ function rounds(numBells) {
   let rowZero = [];
   
   for (let i = 0; i < numBells; ++i) {
-      rowZero.push(i+1);
-    }
+    rowZero.push(i+1);
+  }
   return rowZero;
 }
 
@@ -929,16 +929,16 @@ function rowStr(row) {
 
 //given pn find hunt bells
 function findhunts(pn, pnstage) {
-	let start = rounds(pnstage);
-	let lead = buildRows(start, pn, 1);
-	let last = lead[lead.length-1].bells;
-	let hunts = [];
-	for (let i = 0; i < pnstage; i++) {
-		if (last[i] === i+1) {
-			hunts.push(i+1);
-		}
-	}
-	return hunts;
+  let start = rounds(pnstage);
+  let lead = buildRows(start, pn, 1);
+  let last = lead[lead.length-1].bells;
+  let hunts = [];
+  for (let i = 0; i < pnstage; i++) {
+    if (last[i] === i+1) {
+      hunts.push(i+1);
+    }
+  }
+  return hunts;
 }
 
 //categorize tokens in supposed place notation
@@ -952,82 +952,82 @@ function pnlexer(pn, pnstage) {
       value: pn[i]
     };
     switch (pn[i]) {
-			case "&": case ",": case "+":
-				token.type = "grouping token";
-				break;
-			case ".":
-				token.type = "separator";
-				break;
-			case "x": case "-":
-				token.type = "all change";
-				break;
-			default:
-				if (stagepp.includes(pn[i])) token.type = "number";
-		}
-		if (token.type) {
-			tokens.push(token);
-		} else {
-			err = "invalid character";
-		}
-	}
+      case "&": case ",": case "+":
+        token.type = "grouping token";
+        break;
+      case ".":
+        token.type = "separator";
+        break;
+      case "x": case "-":
+        token.type = "all change";
+        break;
+      default:
+        if (stagepp.includes(pn[i])) token.type = "number";
+    }
+    if (token.type) {
+      tokens.push(token);
+    } else {
+      err = "invalid character";
+    }
+  }
 	
-	return [err, tokens];
+  return [err, tokens];
 }
 
 function pnNumJoin(tokens) {
-	let arrnj = [];
-	let prevtype = "all change";
-	let prev = "x";
-	let err;
+  let arrnj = [];
+  let prevtype = "all change";
+  let prev = "x";
+  let err;
 
-	//add tokens except separator to new array; if consecutive numbers combine them
-	for (let i = 0; i < tokens.length; i++) {
-		let t = tokens[i].type;
-		if (t === "number" && prevtype === "number") {
-			let diff = places.indexOf(tokens[i].value) - places.indexOf(prev);
-			if (arrnj[arrnj.length-1].value.includes(tokens[i].value)) {
-				err = "repeated place????";
-			} else if (places.indexOf(tokens[i].value) < places.indexOf(prev)) {
-				err = "numbers out of order";
-			} else if (diff > 2 && diff%2 === 0) {
-				err = "missing internal place?";
-			}
-			arrnj[arrnj.length-1].value += tokens[i].value;
-			prev = tokens[i].value;
-		} else if (t === "separator") {
-			prevtype = "separator";
-			prev = ".";
-		} else {
-			arrnj.push(tokens[i]);
-			prevtype = t;
-			prev = tokens[i].value;
-		}
-	}
+  //add tokens except separator to new array; if consecutive numbers combine them
+  for (let i = 0; i < tokens.length; i++) {
+    let t = tokens[i].type;
+    if (t === "number" && prevtype === "number") {
+      let diff = places.indexOf(tokens[i].value) - places.indexOf(prev);
+      if (arrnj[arrnj.length-1].value.includes(tokens[i].value)) {
+        err = "repeated place????";
+      } else if (places.indexOf(tokens[i].value) < places.indexOf(prev)) {
+        err = "numbers out of order";
+      } else if (diff > 2 && diff%2 === 0) {
+        err = "missing internal place?";
+      }
+      arrnj[arrnj.length-1].value += tokens[i].value;
+      prev = tokens[i].value;
+    } else if (t === "separator") {
+      prevtype = "separator";
+      prev = ".";
+    } else {
+      arrnj.push(tokens[i]);
+      prevtype = t;
+      prev = tokens[i].value;
+    }
+  }
 
-	return [err, arrnj];
+  return [err, arrnj];
 }
 
 function pnNumAbbr(tokens, pnstage) {
-	//do stuff with the objects of type 'number'
-	for (let i = 0; i < tokens.length; i++) {
-		let t = tokens[i];
-		if (t.type === "number") {
-			//turn value string into array of characters, convert strings in array to numbers
-			let numArr = t.value.split("").map(n => places.indexOf(n)+1);
+  //do stuff with the objects of type 'number'
+  for (let i = 0; i < tokens.length; i++) {
+    let t = tokens[i];
+    if (t.type === "number") {
+      //turn value string into array of characters, convert strings in array to numbers
+      let numArr = t.value.split("").map(n => places.indexOf(n)+1);
 
-			//odd AND even bell methods:
+      //odd AND even bell methods:
         //if the value begins with an even number, add 1 to beginning
-			if (numArr[0] % 2 === 0) {
-				numArr.unshift(1);
-			}
-				//if consecutive places only have one place between, add that place
-			if (numArr.length > 1) {
-				for (let j = numArr.length-2; j > -1; j--) {
-					if (numArr[j+1] - numArr[j] === 2) {
-						numArr.splice(j+1, 0, numArr[j]+1);
-					}
-				}
-			}
+      if (numArr[0] % 2 === 0) {
+        numArr.unshift(1);
+      }
+        //if consecutive places only have one place between, add that place
+      if (numArr.length > 1) {
+        for (let j = numArr.length-2; j > -1; j--) {
+          if (numArr[j+1] - numArr[j] === 2) {
+            numArr.splice(j+1, 0, numArr[j]+1);
+          }
+        }
+      }
 			
       //if the value ends with the opposite quality from the stage, add stage to end
       if (stage%2 != numArr[numArr.length-1] % 2) {
@@ -1035,93 +1035,93 @@ function pnNumAbbr(tokens, pnstage) {
       }
       t.value = numArr;
     }
-	}
+  }
 }
 
 
 function pngrouping(tokens) {
-	let groupingString = tokens.filter(t => t.type === "grouping token").map(t => t.value).join("");
+  let groupingString = tokens.filter(t => t.type === "grouping token").map(t => t.value).join("");
 
-	if (!["","+"].includes(groupingString)) {
-		let groupingTokens = [];
-		for (let i = 0; i < tokens.length; i++) {
-			if (tokens[i].type === "grouping token") {
-				groupingTokens.push({index: i, token: tokens[i].value});
-			}
-		}
-		let mirrorStart;
-		let mirrorEnd = 0;
-		let insertIndex;
-		let numToReplace;
-		let toBeReversed;
-		switch (groupingString) {
-			case ",":
-				let greater = groupingTokens[0].index > 1;
+  if (!["","+"].includes(groupingString)) {
+    let groupingTokens = [];
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i].type === "grouping token") {
+        groupingTokens.push({index: i, token: tokens[i].value});
+      }
+    }
+    let mirrorStart;
+    let mirrorEnd = 0;
+    let insertIndex;
+    let numToReplace;
+    let toBeReversed;
+    switch (groupingString) {
+      case ",":
+        let greater = groupingTokens[0].index > 1;
 
-				mirrorStart = greater ? 0 : 2;
-				mirrorEnd = greater ? groupingTokens[0].index-1 : tokens.length-1;
-				insertIndex = greater ? groupingTokens[0].index+1 : tokens.length;
-				break;
-			case "&,": case "&,+":
-				mirrorStart = groupingTokens[0].index+1;
-				mirrorEnd = groupingTokens[1].index-1;
-				insertIndex = mirrorEnd+2;
-				break;
-			case "+,": case "+,&":
-				let j = groupingString === "+," ? 1 : 2;
-				mirrorStart = groupingTokens[j].index+1;
-				mirrorEnd = tokens.length - 1;
-				insertIndex = tokens.length;
-				break;
-		}
+        mirrorStart = greater ? 0 : 2;
+        mirrorEnd = greater ? groupingTokens[0].index-1 : tokens.length-1;
+        insertIndex = greater ? groupingTokens[0].index+1 : tokens.length;
+        break;
+      case "&,": case "&,+":
+        mirrorStart = groupingTokens[0].index+1;
+        mirrorEnd = groupingTokens[1].index-1;
+        insertIndex = mirrorEnd+2;
+        break;
+      case "+,": case "+,&":
+        let j = groupingString === "+," ? 1 : 2;
+        mirrorStart = groupingTokens[j].index+1;
+        mirrorEnd = tokens.length - 1;
+        insertIndex = tokens.length;
+        break;
+    }
 
-		if (mirrorEnd === 0) {
-			toBeReversed = tokens.slice(mirrorStart);
-		} else {
-			toBeReversed = tokens.slice(mirrorStart, mirrorEnd);
-		}
+    if (mirrorEnd === 0) {
+      toBeReversed = tokens.slice(mirrorStart);
+    } else {
+      toBeReversed = tokens.slice(mirrorStart, mirrorEnd);
+    }
 
-		toBeReversed.reverse();
+    toBeReversed.reverse();
 
-		for (let j = 0; j < toBeReversed.length; j++) {
-			tokens.splice(insertIndex+j, 0, toBeReversed[j]);
-		}
-	}
+    for (let j = 0; j < toBeReversed.length; j++) {
+      tokens.splice(insertIndex+j, 0, toBeReversed[j]);
+    }
+  }
 }
 
 function parsePN(pn, pnstage) {
-	let res = pnlexer(pn, pnstage);
+  let res = pnlexer(pn, pnstage);
 
-	if (res[0]) {
-		return res;
-	} else {
-		res = pnNumJoin(res[1]);
-		if (res[0]) {
-			return res;
-		} else {
-			let tokens = res[1];
-			pnNumAbbr(tokens, pnstage);
-			pngrouping(tokens);
-			return [null, tokens.filter(t => t.type !== "grouping token").map(t => t.value)];
-		}
-	}
+  if (res[0]) {
+    return res;
+  } else {
+    res = pnNumJoin(res[1]);
+    if (res[0]) {
+      return res;
+    } else {
+      let tokens = res[1];
+      pnNumAbbr(tokens, pnstage);
+      pngrouping(tokens);
+      return [null, tokens.filter(t => t.type !== "grouping token").map(t => t.value)];
+    }
+  }
 }
 
 //take my processed pn and make a string
 function pnstring(pn) {
-	let str = "";
-	let nums;
-	pn.forEach(e => {
-		if (e === "x") {
-			str += "-";
-			nums = false;
-		} else {
-			if (nums) str += ".";
-			str += rowStr(e);
-			nums = true;
-		}
-	});
-	return str;
+  let str = "";
+  let nums;
+  pn.forEach(e => {
+    if (e === "x") {
+      str += "-";
+      nums = false;
+    } else {
+      if (nums) str += ".";
+      str += rowStr(e);
+      nums = true;
+    }
+  });
+  return str;
 }
 
 function findbypn(pn, pnstage) {
