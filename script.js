@@ -748,19 +748,19 @@ function drawNumbers(arr, x, parent) {
   }
 }
 
-function drawPath(arr, bell, x, parent) {
+function drawPath(arr, bell, x, parent, yinc) {
   let g = drawElement("group", [parent, {style: "stroke:"+bell.color+"; stroke-width:"+bell.weight+"; fill:none;"}]);
   let num = bell.bell;
   let current = arr[0].bells.indexOf(num);
-  let path = "M "+(current*16+x)+" 10";
+  let path = "M "+(current*16+x)+" "+(yinc/2);
   for (let i = 1; i < arr.length; i++) {
     let index = arr[i].bells.indexOf(num);
     if (index === current) {
-      path += " v20";
+      path += " v"+yinc;
     } else if (index > current) {
-      path += " l16,20";
+      path += " l16,"+yinc;
     } else if (index < current) {
-      path += " l-16,20";
+      path += " l-16,"+yinc;
     }
     current = index;
   }
@@ -831,7 +831,7 @@ function drawgridgrid() {
   let width = rowArray[0].bells.length*16 + 38;
   let x = 40;
   let paths = buildgridpaths(queryobj.stage, method.hunts, queryobj.gridcolors);
-  console.log(paths);
+  //console.log(paths);
   drawgridsvg(rowArray, paths, width, x);
 }
 
@@ -875,7 +875,12 @@ function drawgrid(pbs) {
 }
 
 function drawgridsvg(arr, paths, width, x) {
-  let height = arr.length * 20;
+  let xinc = 16;
+  let yinc = 20;
+  if (!queryobj.numbers && !arr[0].description) {
+    yinc = 12;
+  }
+  let height = arr.length * yinc;
   let gridwidth = (arr.some(r => r.method) || arr[0].description) ? width+500 : width;
   $("#container").append('<div class="grid"></div>');
   let grid = svg.svg($("div.grid:last-child"), null, null, gridwidth, height, {class: "grid", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink"});
@@ -886,17 +891,17 @@ function drawgridsvg(arr, paths, width, x) {
   }
   //draw lines
   for (let i = 0; i < paths.length; i++) {
-    drawPath(arr, paths[i], x+5, grid);
+    drawPath(arr, paths[i], x+5, grid, yinc);
   }
   
   //draw LH lines
   //indicate calls
   let text = svg.group(grid, {style: "font-family: Verdana, sans-serif; fill: #000; font-size: 14px;"});
   let lines = svg.group(grid, {style: "stroke: #111; stroke-width:1;"});
-  svg.line(lines, x-2, 20, width, 20);
+  svg.line(lines, x-2, yinc, width, yinc);
   let stedman = arr.find(r => r.name === "new six");
   for (let i = 1; i < arr.length; i++) {
-    let y = arr[i].rowNum * 20;
+    let y = arr[i].rowNum * yinc;
     if (arr[i].name === "new six") {
       svg.line(lines, x-2, y, width, y);
     }
@@ -905,11 +910,11 @@ function drawgridsvg(arr, paths, width, x) {
     }
     if (["b", "s"].includes(arr[i].type)) {
       let t = arr[i].type === "b" ? "-" : "s";
-      svg.text(text, 24, y+16, t);
+      svg.text(text, 24, y+yinc, t);
     }
     if (arr[i].method) {
       let textx = x+(stage+1)*16;
-      svg.text(text, textx, y+16, arr[i].method);
+      svg.text(text, textx, y+yinc, arr[i].method);
     }
   }
   
