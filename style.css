@@ -241,6 +241,10 @@
   ul#methodList li.selected {
     background-color: lightsteelblue;
   }
+
+  div.type h3 {
+    margin-top: 4px;
+  }
 }
 
 @media print {
