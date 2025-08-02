@@ -611,14 +611,9 @@ function resultsrouter(obj) {
   
   if (title) {
     //console.log(method.hunts);
-    $("#container").append("<h1>"+title+"</h1>");
     
-    if (obj.blueBell != "auto") {
-      blueBell = Number(obj.blueBell);
-    }
+    routergrid(obj);
     
-    let pbs = !method.stedman && method.leadLength > 3;
-    drawgrid(pbs);
     
   } else {
     let text = obj.lookup === "name" ? "Method not found" : "Problem with place notation";
@@ -628,7 +623,22 @@ function resultsrouter(obj) {
 
 function routergrid(obj) {
   //different grid display options
-	
+  $("#container").append("<h1>"+title+"</h1>");
+
+  switch (obj.gridtype) {
+    case "gridline":
+      if (obj.blueBell != "auto") {
+        blueBell = Number(obj.blueBell);
+      }
+      let pbs = !method.stedman && method.leadLength > 3;
+      drawgrid(pbs);
+      break;
+    case "gridgrid":
+      drawgridgrid();
+      break;
+  }
+  
+  
 }
 
 function routermethod(obj) {
@@ -794,43 +804,13 @@ function buildpaths2(bb) {
   return paths;
 }
 
-function buildpaths() {
-  let paths = [];
-  let used = [];
-  if (method.hunts) {
-    method.hunts.forEach(n => {
-      let path = {
-        bell: n,
-        weight: 1,
-        color: "red"
-      };
-      paths.push(path);
-      used.push(n);
-    });
-  }
-  if (paths.length < stage) {
-    let pal = testlastpn(method.plainPN[method.plainPN.length-1]);
-    let bell;
-    if (pal && !used.includes(pal)) {
-      bell = pal;
-    } else {
-      let r = rounds(stage);
-      bell = r.find(n => !used.includes(n));
-    }
-    paths.push({
-      bell: bell,
-      weight: 2,
-      color: "blue"
-    });
-    blueBell = bell;
-  }
-  return paths;
-}
+
 
 function drawgridgrid() {
   let width = rowArray[0].bells.length*16 + 38;
   let x = 40;
-	
+	let paths = buildgridpaths(queryobj.stage, method.hunts, queryobj.colors);
+  drawgridsvg(rowArray, paths, width, x);
 }
 
 function drawgrid(pbs) {
