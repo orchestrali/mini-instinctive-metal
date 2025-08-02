@@ -770,9 +770,9 @@ function drawPath(arr, bell, x, parent) {
 //stage, huntbells, whether working bells should be different colors
 function buildgridpaths(n,hunts,color) {
   let colors = gridcolorsets(n-hunts.length);
-  let arr = rounds(n);
+  let r = rounds(n);
   let i = 0;
-  arr.map(b => {
+  let arr = r.map(b => {
     let p = {
       bell: b,
       weight: hunts.includes(b) ? 1 : 2,
