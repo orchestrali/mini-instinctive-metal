@@ -11,7 +11,8 @@ var svg;
 //type of display: grid, graph, staff, practice, simulator
 var type = "grid";
 //grid display options: basic-lines, everyline, bellgroups
-let gridtype = "basic-lines";
+//now gridline, gridgrid
+let gridtype = "gridline";
 
 //strategies for choosing method/comp
 //default "name", others "pn" and "complib"
@@ -64,6 +65,8 @@ $(function(){
     e.stopPropagation();
   });
   $("#methodName").on("keyup", methodnamekeyup);
+
+  $("#gridtype").change(changegridtype);
   
   $("#submit").on("click", submitform);
   
@@ -158,6 +161,17 @@ function changestrategy() {
   
   $("div#searchby"+prev).slideUp(600, () => {
     $("div#searchby"+lookup).slideDown(600);
+  });
+}
+
+function changegridtype() {
+  let prev = gridtype;
+  gridtype = $('input[name="gridtype"]:checked').val();
+  $("div.gridtype").find(":input").prop("disabled", true);
+  $("div#"+gridtype).find(":input").prop("disabled", false);
+
+  $("div#"+prev).slideUp(400, () => {
+    $("div#"+gridtype).slideDown(400);
   });
 }
 
@@ -579,11 +593,16 @@ function submitform() {
   queryobj = {type: type};
   
   for (let key of data.entries()) {
-    if (key[0] === "stage") {
-      queryobj[key[0]] = Number(key[1]);
-    } else {
-      queryobj[key[0]] = key[1];
+    switch (key[0]) {
+      case "stage":
+        queryobj[key[0]] = Number(key[1]);
+        break;
+      case "gridcolors":
+        if (key[1] === "colors") queryobj.gridcolors = true;
+      default:
+        queryobj[key[0]] = key[1];
     }
+    
   }
 
   if (queryobj.type === "grid" && queryobj.gridtype === "gridgrid") {
@@ -809,7 +828,7 @@ function buildpaths2(bb) {
 function drawgridgrid() {
   let width = rowArray[0].bells.length*16 + 38;
   let x = 40;
-	let paths = buildgridpaths(queryobj.stage, method.hunts, queryobj.colors);
+	let paths = buildgridpaths(queryobj.stage, method.hunts, queryobj.gridcolors);
   drawgridsvg(rowArray, paths, width, x);
 }
 
