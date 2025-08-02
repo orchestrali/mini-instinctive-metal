@@ -631,7 +631,7 @@ function resultsrouter(obj) {
   if (title) {
     //console.log(method.hunts);
     
-    routergrid(obj);
+    routergrid(obj, title);
     
     
   } else {
@@ -640,7 +640,7 @@ function resultsrouter(obj) {
   }
 }
 
-function routergrid(obj) {
+function routergrid(obj, title) {
   //different grid display options
   $("#container").append("<h1>"+title+"</h1>");
 
