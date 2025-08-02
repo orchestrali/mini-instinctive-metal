@@ -613,6 +613,7 @@ function submitform() {
 }
 
 function resultsrouter(obj) {
+  console.log(obj);
   $("#container").contents().remove();
   //get row array
   let title;
