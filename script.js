@@ -576,7 +576,7 @@ function submitform() {
   blueBell = null;
   let form = document.getElementById("formform");
   let data = new FormData(form);
-  queryobj = {};
+  queryobj = {type: type};
   
   for (let key of data.entries()) {
     if (key[0] === "stage") {
@@ -584,6 +584,10 @@ function submitform() {
     } else {
       queryobj[key[0]] = key[1];
     }
+  }
+
+  if (queryobj.type === "grid" && queryobj.gridtype === "gridgrid") {
+    queryobj.quantity = "onelead";
   }
   
   resultsrouter(queryobj);
@@ -730,6 +734,36 @@ function drawPath(arr, bell, x, parent) {
     current = index;
   }
   drawElement("path", [g, path]);
+}
+
+//stage, huntbells, whether working bells should be different colors
+function buildgridpaths(n,hunts,color) {
+  let colors = gridcolorsets(n-hunts.length);
+  let arr = rounds(n);
+  let i = 0;
+  arr.map(b => {
+    let p = {
+      bell: b,
+      weight: hunts.includes(b) ? 1 : 2,
+      color: hunts.includes(b) ? "red" : "blue"
+    };
+    if (color && !hunts.includes(b)) {
+      p.color = colors[i];
+      i++;
+    }
+    return p;
+  });
+  return arr;
+}
+
+function gridcolorsets(n) {
+  let colors = ["a4e0b0", "#71d184", "#3fa654", "#007317", "teal", "lightseagreen", "#8adfef", "#6ab9ef", "#658de6", "#4c5ced", "#1a1ad6", "#000080", "indigo", "#8a2be2", "#9f7be2"];
+  let order = [6,0,8,1,13,4,11,7,2,5,14,12];
+  let remove = order.slice(0,15-n).sort((a,b) => b-a);
+  remove.forEach(e => {
+    colors.splice(e, 1);
+  });
+  return colors;
 }
 
 function buildpaths2(bb) {
