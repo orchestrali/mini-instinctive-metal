@@ -715,7 +715,8 @@ function findmethod(obj) {
 function buildrowarr() {
   switch (queryobj.quantity) {
     case "onelead":
-      rowArray = buildRows(rounds(method.stage), method.plainPN, 0);
+      rowArray = buildRows(rounds(method.stage), method.plainPN, 1);
+      rowArray.unshift({rowNum: 0, bells: rounds(method.stage)});
       break;
     case "touch":
       // stuff here later
