@@ -613,7 +613,7 @@ function submitform() {
 }
 
 function resultsrouter(obj) {
-  console.log(obj);
+  //console.log(obj);
   $("#container").contents().remove();
   //get row array
   let title;
@@ -830,7 +830,8 @@ function buildpaths2(bb) {
 function drawgridgrid() {
   let width = rowArray[0].bells.length*16 + 38;
   let x = 40;
-	let paths = buildgridpaths(queryobj.stage, method.hunts, queryobj.gridcolors);
+  let paths = buildgridpaths(queryobj.stage, method.hunts, queryobj.gridcolors);
+  console.log(paths);
   drawgridsvg(rowArray, paths, width, x);
 }
 
