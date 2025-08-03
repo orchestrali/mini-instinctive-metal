@@ -184,7 +184,7 @@
     padding-top: 5px;
   }
   
-  div.searchstrategy > div {
+  div.searchstrategy > div, div.gridtype > div {
     margin-bottom: 7px;
   }
   
@@ -240,6 +240,10 @@
   
   ul#methodList li.selected {
     background-color: lightsteelblue;
+  }
+
+  div.type h3 {
+    margin-top: 4px;
   }
 }
 

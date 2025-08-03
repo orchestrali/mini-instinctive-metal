@@ -11,7 +11,8 @@ var svg;
 //type of display: grid, graph, staff, practice, simulator
 var type = "grid";
 //grid display options: basic-lines, everyline, bellgroups
-let gridtype = "basic-lines";
+//now gridline, gridgrid
+let gridtype = "gridline";
 
 //strategies for choosing method/comp
 //default "name", others "pn" and "complib"
@@ -49,9 +50,9 @@ $(function(){
   
   $("#stage").change(stagechange);
 
-	$("#lookupstrat").change(changestrategy);
+  $("#lookupstrat").change(changestrategy);
 	
-	$("#placeNotation").on("keyup", pnkeyup);
+  $("#placeNotation").on("keyup", pnkeyup);
 	
   $('#methodClass').change(classchange);
   $("#methodName").click(methodnameclick);
@@ -64,6 +65,8 @@ $(function(){
     e.stopPropagation();
   });
   $("#methodName").on("keyup", methodnamekeyup);
+
+  $("#gridtype").change(changegridtype);
   
   $("#submit").on("click", submitform);
   
@@ -94,7 +97,7 @@ function stagechange() {
   //console.log("stage: ", stage);
   checkedClass = "";
 
-	$("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
+  $("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
   
   //remove methods from name dropdown
   $('ul#methodList').children().detach();
@@ -155,14 +158,29 @@ function changestrategy() {
   
   $("div.searchstrategy").find(":input").prop("disabled", true);
   $("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
-  
-  $("div#searchby"+prev).slideUp(600, () => {
-    $("div#searchby"+lookup).slideDown(600);
-  });
+
+  $("div#searchby"+prev).addClass("hidden");
+  $("div#searchby"+lookup).removeClass("hidden");
+  //$("div#searchby"+prev).slideUp(600, () => {
+  //  $("div#searchby"+lookup).slideDown(600);
+  //});
+}
+
+function changegridtype() {
+  let prev = gridtype;
+  gridtype = $('input[name="gridtype"]:checked').val();
+  $("div.gridtype").find(":input").prop("disabled", true);
+  $("div#"+gridtype).find(":input").prop("disabled", false);
+
+  $("div#"+prev).addClass("hidden");
+  $("div#"+gridtype).removeClass("hidden");
+  //$("div#"+prev).slideUp(400, () => {
+  //  $("div#"+gridtype).slideDown(400);
+  //});
 }
 
 function pnkeyup() {
-	$("#pnerrors").text("");
+  $("#pnerrors").text("");
   let allowed = ".,x-&+";
   let errs = [];
   let val = $(this).val();
@@ -176,49 +194,49 @@ function pnkeyup() {
     }
   });
 
-	//stage needs to be specified
-	if (!stage) {
+  //stage needs to be specified
+  if (!stage) {
     //shouldn't be possible
-		errs.push("make sure to select a stage!");
-	} else {
-		allowed += places.slice(0,stage);
-	}
-	//unrecognized character, includes places outside stage
-	if (chars.find(c => !allowed.includes(c))) {
-		errs.push("unrecognized character in place notation");
-	}
+    errs.push("make sure to select a stage!");
+  } else {
+    allowed += places.slice(0,stage);
+  }
+  //unrecognized character, includes places outside stage
+  if (chars.find(c => !allowed.includes(c))) {
+    errs.push("unrecognized character in place notation");
+  }
   //no x or - on odd stages
-	let cross = chars.includes("x") ? "x" : chars.includes("-") ? "-" : null;
-	if (stage%2 === 1 && cross) {
-		errs.push(cross + " not allowed on odd stages");
-	}
-	//consecutive x or - okay but no other consecutives
-	let pairs = chars.slice(0, chars.length-1);
-	for (let i = 0; i < pairs.length; i++) {
-		pairs[i] += chars[i+1];
-	}
-	let filter = pairs.filter(p => p[0] === p[1] && !["x","-"].includes(p[0]));
-	if (filter.length) {
-		errs.push("repeated "+filter[0][0]+" not allowed");
-	}
-	//first character can't be , or .
-	if ([",","."].includes(chars[0])) {
-		errs.push("can't begin with "+chars[0]);
-	}
+  let cross = chars.includes("x") ? "x" : chars.includes("-") ? "-" : null;
+  if (stage%2 === 1 && cross) {
+    errs.push(cross + " not allowed on odd stages");
+  }
+  //consecutive x or - okay but no other consecutives
+  let pairs = chars.slice(0, chars.length-1);
+  for (let i = 0; i < pairs.length; i++) {
+    pairs[i] += chars[i+1];
+  }
+  let filter = pairs.filter(p => p[0] === p[1] && !["x","-"].includes(p[0]));
+  if (filter.length) {
+    errs.push("repeated "+filter[0][0]+" not allowed");
+  }
+  //first character can't be , or .
+  if ([",","."].includes(chars[0])) {
+    errs.push("can't begin with "+chars[0]);
+  }
 
-	if (errs.length) {
-		//display them
+  if (errs.length) {
+    //display them
     errs.forEach(e => {
       $("#pnerrors").append(`<p>${e}</p>`);
     });
-	} else {
+  } else {
     let res = pnlexer(chars.join(""));
-		//shouldn't be any errors...
-		let next = pnNumJoin(res[1]);
-		if (next[0]) {
-			//display errors
+    //shouldn't be any errors...
+    let next = pnNumJoin(res[1]);
+    if (next[0]) {
+    //display errors
       $("#pnerrors").append(`<p>${next[0]}</p>`);
-		}
+    }
   }
 	
 }
@@ -242,9 +260,9 @@ function classchange() {
 
 function hidenamelist() {
   $(document.body).on('click.menuHide', function(){
-      var $body = $(this);
-      $("#methodList li").hide();
-      $body.off('click.menuHide');
+    var $body = $(this);
+    $("#methodList li").hide();
+    $body.off('click.menuHide');
   });
 }
 
@@ -576,20 +594,31 @@ function submitform() {
   blueBell = null;
   let form = document.getElementById("formform");
   let data = new FormData(form);
-  queryobj = {};
+  queryobj = {type: type};
   
   for (let key of data.entries()) {
-		if (key[0] === "stage") {
-			queryobj[key[0]] = Number(key[1]);
-		} else {
-			queryobj[key[0]] = key[1];
-		}
+    switch (key[0]) {
+      case "stage":
+        queryobj[key[0]] = Number(key[1]);
+        break;
+      case "gridcolors":
+        if (key[1] === "colors") queryobj.gridcolors = true;
+        break;
+      default:
+        queryobj[key[0]] = key[1];
+    }
+    
+  }
+
+  if (queryobj.type === "grid" && queryobj.gridtype === "gridgrid") {
+    queryobj.quantity = "onelead";
   }
   
   resultsrouter(queryobj);
 }
 
 function resultsrouter(obj) {
+  //console.log(obj);
   $("#container").contents().remove();
   //get row array
   let title;
@@ -607,19 +636,34 @@ function resultsrouter(obj) {
   
   if (title) {
     //console.log(method.hunts);
-    $("#container").append("<h1>"+title+"</h1>");
     
-    if (queryobj.blueBell != "auto") {
-      blueBell = Number(queryobj.blueBell);
-    }
+    routergrid(obj, title);
     
-    let pbs = !method.stedman || method.leadLength > 3;
-    drawgrid(pbs);
     
   } else {
     let text = obj.lookup === "name" ? "Method not found" : "Problem with place notation";
     $("#container").append(`<h4>${text}</h4>`);
   }
+}
+
+function routergrid(obj, title) {
+  //different grid display options
+  $("#container").append("<h1>"+title+"</h1>");
+
+  switch (obj.gridtype) {
+    case "gridline":
+      if (obj.blueBell != "auto") {
+        blueBell = Number(obj.blueBell);
+      }
+      let pbs = !method.stedman && method.leadLength > 3;
+      drawgrid(pbs);
+      break;
+    case "gridgrid":
+      drawgridgrid();
+      break;
+  }
+  
+  
 }
 
 function routermethod(obj) {
@@ -652,7 +696,8 @@ function routerpn(obj) {
       method = {
         stage: obj.stage,
         leadLength: pn.length,
-        plainPN: pn
+        plainPN: pn,
+				hunts: findhunts(pn, obj.stage)
       };
       title = obj.placeNotation;
     }
@@ -675,7 +720,8 @@ function findmethod(obj) {
 function buildrowarr() {
   switch (queryobj.quantity) {
     case "onelead":
-      rowArray = buildRows(rounds(method.stage), method.plainPN, 0);
+      rowArray = buildRows(rounds(method.stage), method.plainPN, 1);
+      rowArray.unshift({rowNum: 0, bells: rounds(method.stage)});
       break;
     case "touch":
       // stuff here later
@@ -707,23 +753,53 @@ function drawNumbers(arr, x, parent) {
   }
 }
 
-function drawPath(arr, bell, x, parent) {
+function drawPath(arr, bell, x, parent, yinc) {
   let g = drawElement("group", [parent, {style: "stroke:"+bell.color+"; stroke-width:"+bell.weight+"; fill:none;"}]);
   let num = bell.bell;
   let current = arr[0].bells.indexOf(num);
-  let path = "M "+(current*16+x)+" 10";
+  let path = "M "+(current*16+x)+" "+(yinc/2);
   for (let i = 1; i < arr.length; i++) {
     let index = arr[i].bells.indexOf(num);
     if (index === current) {
-      path += " v20";
+      path += " v"+yinc;
     } else if (index > current) {
-      path += " l16,20";
+      path += " l16,"+yinc;
     } else if (index < current) {
-      path += " l-16,20";
+      path += " l-16,"+yinc;
     }
     current = index;
   }
   drawElement("path", [g, path]);
+}
+
+//stage, huntbells, whether working bells should be different colors
+function buildgridpaths(n,hunts,color) {
+  let colors = gridcolorsets(n-hunts.length);
+  let r = rounds(n);
+  let i = 0;
+  let arr = r.map(b => {
+    let p = {
+      bell: b,
+      weight: hunts.includes(b) ? 1 : 2,
+      color: hunts.includes(b) ? "red" : "blue"
+    };
+    if (color && !hunts.includes(b)) {
+      p.color = colors[i];
+      i++;
+    }
+    return p;
+  });
+  return arr;
+}
+
+function gridcolorsets(n) {
+  let colors = ["a4e0b0", "#71d184", "#3fa654", "#007317", "teal", "lightseagreen", "#8adfef", "#6ab9ef", "#658de6", "#4c5ced", "#1a1ad6", "#000080", "indigo", "#8a2be2", "#9f7be2"];
+  let order = [6,0,8,1,13,4,11,7,2,5,14,12];
+  let remove = order.slice(0,15-n).sort((a,b) => b-a);
+  remove.forEach(e => {
+    colors.splice(e, 1);
+  });
+  return colors;
 }
 
 function buildpaths2(bb) {
@@ -754,39 +830,15 @@ function buildpaths2(bb) {
   return paths;
 }
 
-function buildpaths() {
-  let paths = [];
-  let used = [];
-  if (method.hunts) {
-    method.hunts.forEach(n => {
-      let path = {
-        bell: n,
-        weight: 1,
-        color: "red"
-      };
-      paths.push(path);
-      used.push(n);
-    });
-  }
-  if (paths.length < stage) {
-    let pal = testlastpn(method.plainPN[method.plainPN.length-1]);
-    let bell;
-    if (pal && !used.includes(pal)) {
-      bell = pal;
-    } else {
-      let r = rounds(stage);
-      bell = r.find(n => !used.includes(n));
-    }
-    paths.push({
-      bell: bell,
-      weight: 2,
-      color: "blue"
-    });
-    blueBell = bell;
-  }
-  return paths;
-}
 
+
+function drawgridgrid() {
+  let width = rowArray[0].bells.length*16 + 38;
+  let x = 40;
+  let paths = buildgridpaths(queryobj.stage, method.hunts, queryobj.gridcolors);
+  //console.log(paths);
+  drawgridsvg(rowArray, paths, width, x);
+}
 
 function drawgrid(pbs) {
   
@@ -828,7 +880,12 @@ function drawgrid(pbs) {
 }
 
 function drawgridsvg(arr, paths, width, x) {
-  let height = arr.length * 20;
+  let xinc = 16;
+  let yinc = 20;
+  if (!queryobj.numbers && !arr[0].description) {
+    yinc = 12;
+  }
+  let height = arr.length * yinc;
   let gridwidth = (arr.some(r => r.method) || arr[0].description) ? width+500 : width;
   $("#container").append('<div class="grid"></div>');
   let grid = svg.svg($("div.grid:last-child"), null, null, gridwidth, height, {class: "grid", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink"});
@@ -839,17 +896,17 @@ function drawgridsvg(arr, paths, width, x) {
   }
   //draw lines
   for (let i = 0; i < paths.length; i++) {
-    drawPath(arr, paths[i], x+5, grid);
+    drawPath(arr, paths[i], x+5, grid, yinc);
   }
   
   //draw LH lines
   //indicate calls
   let text = svg.group(grid, {style: "font-family: Verdana, sans-serif; fill: #000; font-size: 14px;"});
   let lines = svg.group(grid, {style: "stroke: #111; stroke-width:1;"});
-  svg.line(lines, x-2, 20, width, 20);
+  svg.line(lines, x-2, yinc, width, yinc);
   let stedman = arr.find(r => r.name === "new six");
   for (let i = 1; i < arr.length; i++) {
-    let y = arr[i].rowNum * 20;
+    let y = arr[i].rowNum * yinc;
     if (arr[i].name === "new six") {
       svg.line(lines, x-2, y, width, y);
     }
@@ -858,11 +915,11 @@ function drawgridsvg(arr, paths, width, x) {
     }
     if (["b", "s"].includes(arr[i].type)) {
       let t = arr[i].type === "b" ? "-" : "s";
-      svg.text(text, 24, y+16, t);
+      svg.text(text, 24, y+yinc, t);
     }
     if (arr[i].method) {
       let textx = x+(stage+1)*16;
-      svg.text(text, textx, y+16, arr[i].method);
+      svg.text(text, textx, y+yinc, arr[i].method);
     }
   }
   
@@ -905,8 +962,8 @@ function rounds(numBells) {
   let rowZero = [];
   
   for (let i = 0; i < numBells; ++i) {
-      rowZero.push(i+1);
-    }
+    rowZero.push(i+1);
+  }
   return rowZero;
 }
 
@@ -916,93 +973,107 @@ function rowStr(row) {
   return str;
 }
 
+//given pn find hunt bells
+function findhunts(pn, pnstage) {
+  let start = rounds(pnstage);
+  let lead = buildRows(start, pn, 1);
+  let last = lead[lead.length-1].bells;
+  let hunts = [];
+  for (let i = 0; i < pnstage; i++) {
+    if (last[i] === i+1) {
+      hunts.push(i+1);
+    }
+  }
+  return hunts;
+}
+
 //categorize tokens in supposed place notation
 function pnlexer(pn, pnstage) {
-	let stagepp = places.slice(0,pnstage);
-	let tokens = [];
-	let err;
+  let stagepp = places.slice(0,pnstage);
+  let tokens = [];
+  let err;
+  
+  for (let i = 0; i < pn.length; i++) {
+    let token = {
+      value: pn[i]
+    };
+    switch (pn[i]) {
+      case "&": case ",": case "+":
+        token.type = "grouping token";
+        break;
+      case ".":
+        token.type = "separator";
+        break;
+      case "x": case "-":
+        token.type = "all change";
+        break;
+      default:
+        if (stagepp.includes(pn[i])) token.type = "number";
+    }
+    if (token.type) {
+      tokens.push(token);
+    } else {
+      err = "invalid character";
+    }
+  }
 	
-	for (let i = 0; i < pn.length; i++) {
-		let token = {
-			value: pn[i]
-		};
-		switch (pn[i]) {
-			case "&": case ",": case "+":
-				token.type = "grouping token";
-				break;
-			case ".":
-				token.type = "separator";
-				break;
-			case "x": case "-":
-				token.type = "all change";
-				break;
-			default:
-				if (stagepp.includes(pn[i])) token.type = "number";
-		}
-		if (token.type) {
-			tokens.push(token);
-		} else {
-			err = "invalid character";
-		}
-	}
-	
-	return [err, tokens];
+  return [err, tokens];
 }
 
 function pnNumJoin(tokens) {
-	let arrnj = [];
-	let prevtype = "all change";
-	let prev = "x";
-	let err;
+  let arrnj = [];
+  let prevtype = "all change";
+  let prev = "x";
+  let err;
 
-	//add tokens except separator to new array; if consecutive numbers combine them
-	for (let i = 0; i < tokens.length; i++) {
-		let t = tokens[i].type;
-		if (t === "number" && prevtype === "number") {
-			let diff = places.indexOf(tokens[i].value) - places.indexOf(prev);
-			if (arrnj[arrnj.length-1].value.includes(tokens[i].value)) {
-				err = "repeated place????";
-			} else if (places.indexOf(tokens[i].value) < places.indexOf(prev)) {
-				err = "numbers out of order";
-			} else if (diff > 2 && diff%2 === 0) {
-				err = "missing internal place?";
-			}
-			arrnj[arrnj.length-1].value += tokens[i].value;
-			prev = tokens[i].value;
-		} else if (t === "separator") {
-			prevtype = "separator";
-			prev = ".";
-		} else {
-			arrnj.push(tokens[i]);
-			prevtype = t;
-			prev = tokens[i].value;
-		}
-	}
+  //add tokens except separator to new array; if consecutive numbers combine them
+  for (let i = 0; i < tokens.length; i++) {
+    let t = tokens[i].type;
+    if (t === "number" && prevtype === "number") {
+      let diff = places.indexOf(tokens[i].value) - places.indexOf(prev);
+      if (arrnj[arrnj.length-1].value.includes(tokens[i].value)) {
+        err = "repeated place????";
+      } else if (places.indexOf(tokens[i].value) < places.indexOf(prev)) {
+        err = "numbers out of order";
+      } else if (diff > 2 && diff%2 === 0) {
+        err = "missing internal place?";
+      }
+      arrnj[arrnj.length-1].value += tokens[i].value;
+      prev = tokens[i].value;
+    } else if (t === "separator") {
+      prevtype = "separator";
+      prev = ".";
+    } else {
+      arrnj.push(tokens[i]);
+      prevtype = t;
+      prev = tokens[i].value;
+    }
+  }
 
-	return [err, arrnj];
+  return [err, arrnj];
 }
 
 function pnNumAbbr(tokens, pnstage) {
-	//do stuff with the objects of type 'number'
-	for (let i = 0; i < tokens.length; i++) {
-		let t = tokens[i];
-		if (t.type === "number") {
-			//turn value string into array of characters, convert strings in array to numbers
-			let numArr = t.value.split("").map(n => places.indexOf(n)+1);
+  //do stuff with the objects of type 'number'
+  for (let i = 0; i < tokens.length; i++) {
+    let t = tokens[i];
+    if (t.type === "number") {
+      //turn value string into array of characters, convert strings in array to numbers
+      let numArr = t.value.split("").map(n => places.indexOf(n)+1);
 
-			//odd AND even bell methods:
+      //odd AND even bell methods:
         //if the value begins with an even number, add 1 to beginning
-			if (numArr[0] % 2 === 0) {
-				numArr.unshift(1);
-			}
-				//if consecutive places only have one place between, add that place
-			if (numArr.length > 1) {
-				for (let j = numArr.length-2; j > -1; j--) {
-					if (numArr[j+1] - numArr[j] === 2) {
-						numArr.splice(j+1, 0, numArr[j]+1);
-					}
-				}
-			}
+      if (numArr[0] % 2 === 0) {
+        numArr.unshift(1);
+      }
+        //if consecutive places only have one place between, add that place
+      if (numArr.length > 1) {
+        for (let j = numArr.length-2; j > -1; j--) {
+          if (numArr[j+1] - numArr[j] === 2) {
+            numArr.splice(j+1, 0, numArr[j]+1);
+          }
+        }
+      }
 			
       //if the value ends with the opposite quality from the stage, add stage to end
       if (stage%2 != numArr[numArr.length-1] % 2) {
@@ -1010,93 +1081,93 @@ function pnNumAbbr(tokens, pnstage) {
       }
       t.value = numArr;
     }
-	}
+  }
 }
 
 
 function pngrouping(tokens) {
-	let groupingString = tokens.filter(t => t.type === "grouping token").map(t => t.value).join("");
+  let groupingString = tokens.filter(t => t.type === "grouping token").map(t => t.value).join("");
 
-	if (!["","+"].includes(groupingString)) {
-		let groupingTokens = [];
-		for (let i = 0; i < tokens.length; i++) {
-			if (tokens[i].type === "grouping token") {
-				groupingTokens.push({index: i, token: tokens[i].value});
-			}
-		}
-		let mirrorStart;
-		let mirrorEnd = 0;
-		let insertIndex;
-		let numToReplace;
-		let toBeReversed;
-		switch (groupingString) {
-			case ",":
-				let greater = groupingTokens[0].index > 1;
+  if (!["","+"].includes(groupingString)) {
+    let groupingTokens = [];
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i].type === "grouping token") {
+        groupingTokens.push({index: i, token: tokens[i].value});
+      }
+    }
+    let mirrorStart;
+    let mirrorEnd = 0;
+    let insertIndex;
+    let numToReplace;
+    let toBeReversed;
+    switch (groupingString) {
+      case ",":
+        let greater = groupingTokens[0].index > 1;
 
-				mirrorStart = greater ? 0 : 2;
-				mirrorEnd = greater ? groupingTokens[0].index-1 : tokens.length-1;
-				insertIndex = greater ? groupingTokens[0].index+1 : tokens.length;
-				break;
-			case "&,": case "&,+":
-				mirrorStart = groupingTokens[0].index+1;
-				mirrorEnd = groupingTokens[1].index-1;
-				insertIndex = mirrorEnd+2;
-				break;
-			case "+,": case "+,&":
-				let j = groupingString === "+," ? 1 : 2;
-				mirrorStart = groupingTokens[j].index+1;
-				mirrorEnd = tokens.length - 1;
-				insertIndex = tokens.length;
-				break;
-		}
+        mirrorStart = greater ? 0 : 2;
+        mirrorEnd = greater ? groupingTokens[0].index-1 : tokens.length-1;
+        insertIndex = greater ? groupingTokens[0].index+1 : tokens.length;
+        break;
+      case "&,": case "&,+":
+        mirrorStart = groupingTokens[0].index+1;
+        mirrorEnd = groupingTokens[1].index-1;
+        insertIndex = mirrorEnd+2;
+        break;
+      case "+,": case "+,&":
+        let j = groupingString === "+," ? 1 : 2;
+        mirrorStart = groupingTokens[j].index+1;
+        mirrorEnd = tokens.length - 1;
+        insertIndex = tokens.length;
+        break;
+    }
 
-		if (mirrorEnd === 0) {
-			toBeReversed = tokens.slice(mirrorStart);
-		} else {
-			toBeReversed = tokens.slice(mirrorStart, mirrorEnd);
-		}
+    if (mirrorEnd === 0) {
+      toBeReversed = tokens.slice(mirrorStart);
+    } else {
+      toBeReversed = tokens.slice(mirrorStart, mirrorEnd);
+    }
 
-		toBeReversed.reverse();
+    toBeReversed.reverse();
 
-		for (let j = 0; j < toBeReversed.length; j++) {
-			tokens.splice(insertIndex+j, 0, toBeReversed[j]);
-		}
-	}
+    for (let j = 0; j < toBeReversed.length; j++) {
+      tokens.splice(insertIndex+j, 0, toBeReversed[j]);
+    }
+  }
 }
 
 function parsePN(pn, pnstage) {
-	let res = pnlexer(pn, pnstage);
+  let res = pnlexer(pn, pnstage);
 
-	if (res[0]) {
-		return res;
-	} else {
-		res = pnNumJoin(res[1]);
-		if (res[0]) {
-			return res;
-		} else {
-			let tokens = res[1];
-			pnNumAbbr(tokens, pnstage);
-			pngrouping(tokens);
-			return [null, tokens.filter(t => t.type !== "grouping token").map(t => t.value)];
-		}
-	}
+  if (res[0]) {
+    return res;
+  } else {
+    res = pnNumJoin(res[1]);
+    if (res[0]) {
+      return res;
+    } else {
+      let tokens = res[1];
+      pnNumAbbr(tokens, pnstage);
+      pngrouping(tokens);
+      return [null, tokens.filter(t => t.type !== "grouping token").map(t => t.value)];
+    }
+  }
 }
 
 //take my processed pn and make a string
 function pnstring(pn) {
-	let str = "";
-	let nums;
-	pn.forEach(e => {
-		if (e === "x") {
-			str += "-";
-			nums = false;
-		} else {
-			if (nums) str += ".";
-			str += rowStr(e);
-			nums = true;
-		}
-	});
-	return str;
+  let str = "";
+  let nums;
+  pn.forEach(e => {
+    if (e === "x") {
+      str += "-";
+      nums = false;
+    } else {
+      if (nums) str += ".";
+      str += rowStr(e);
+      nums = true;
+    }
+  });
+  return str;
 }
 
 function findbypn(pn, pnstage) {

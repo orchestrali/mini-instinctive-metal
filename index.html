@@ -92,7 +92,7 @@
               </ul>
             </fieldset>
           </div>
-          <div class="line"></div>
+          
           
           <div class="searchstrategy" id="searchbyname">
             <div>
@@ -134,27 +134,53 @@
           </div>
           
         </div>
-        
+        <div class="line"></div>
         <div id="gridopts" class="type">
-          <p class="bold">
+          <h3>
             Display options
-          </p>
-          <p>
-            <input type="checkbox" checked id="show-nums" name="numbers" value="show" />
-            <label for="numbers">Show numbers</label>
-          </p>
-          <p>
-            <label for="blueBell">
-              Draw path for bell:
-            </label>
-            <select id="blueBell" name="blueBell" class="blueBell">
-              
-            </select>
-          </p>
-          <div class="input">
-            <input type="checkbox" id="describe" name="describe" value="show" />
-            <label for="describe">Show description of the blue line</label>
+          </h3>
+          <fieldset class="borderless" id="gridtype">
+            <legend class="bold">
+              Display as:
+            </legend>
+            <ul>
+              <li><label><input type="radio" name="gridtype" value="gridline" checked />line(s)</label></li>
+              <li><label><input type="radio" name="gridtype" value="gridgrid" />grid</label></li>
+            </ul>
+          </fieldset>
+          
+          <div class="gridtype" id="gridline">
+            <div>
+              <label><input type="checkbox" checked id="show-nums" name="numbers" value="show" />Show numbers</label>
+            </div>
+            <div>
+              <label for="blueBell">
+                Draw path for bell:
+              </label>
+              <select id="blueBell" name="blueBell" class="blueBell">
+      
+              </select>
+            </div>
+            <div>
+              <label>
+                <input type="checkbox" id="describe" name="describe" value="show" />Show description of the blue line
+              </label>
+            </div>
           </div>
+          <div class="gridtype hidden" id="gridgrid">
+            <fieldset class="borderless">
+              <legend>Draw working bells:</legend>
+              <ul>
+                <li>
+                  <label><input type="radio" name="gridcolors" value="0" />same color</label>
+                </li>
+                <li>
+                  <label><input type="radio" name="gridcolors" value="colors" checked />different colors</label>
+                </li>
+              </ul>
+            </fieldset>
+          </div>
+                
         </div>
         <button type="button" id="submit">Submit</button>
       </form>
