@@ -158,10 +158,12 @@ function changestrategy() {
   
   $("div.searchstrategy").find(":input").prop("disabled", true);
   $("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
-  
-  $("div#searchby"+prev).slideUp(600, () => {
-    $("div#searchby"+lookup).slideDown(600);
-  });
+
+  $("div#searchby"+prev).addClass("hidden");
+  $("div#searchby"+lookup).removeClass("hidden");
+  //$("div#searchby"+prev).slideUp(600, () => {
+  //  $("div#searchby"+lookup).slideDown(600);
+  //});
 }
 
 function changegridtype() {
@@ -170,9 +172,11 @@ function changegridtype() {
   $("div.gridtype").find(":input").prop("disabled", true);
   $("div#"+gridtype).find(":input").prop("disabled", false);
 
-  $("div#"+prev).slideUp(400, () => {
-    $("div#"+gridtype).slideDown(400);
-  });
+  $("div#"+prev).addClass("hidden");
+  $("div#"+gridtype).removeClass("hidden");
+  //$("div#"+prev).slideUp(400, () => {
+  //  $("div#"+gridtype).slideDown(400);
+  //});
 }
 
 function pnkeyup() {
