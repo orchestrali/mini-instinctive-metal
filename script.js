@@ -599,6 +599,7 @@ function submitform() {
         break;
       case "gridcolors":
         if (key[1] === "colors") queryobj.gridcolors = true;
+        break;
       default:
         queryobj[key[0]] = key[1];
     }
