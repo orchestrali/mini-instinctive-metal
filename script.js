@@ -697,7 +697,8 @@ function routerpn(obj) {
         stage: obj.stage,
         leadLength: pn.length,
         plainPN: pn,
-				hunts: findhunts(pn, obj.stage)
+        hunts: findhunts(pn, obj.stage),
+        pbOrder: buildpborder(pn, obj.stage)
       };
       title = obj.placeNotation;
     }
@@ -973,11 +974,16 @@ function rowStr(row) {
   return str;
 }
 
-//given pn find hunt bells
-function findhunts(pn, pnstage) {
+function getLH(pn, pnstage) {
   let start = rounds(pnstage);
   let lead = buildRows(start, pn, 1);
   let last = lead[lead.length-1].bells;
+  return last;
+}
+
+//given pn find hunt bells
+function findhunts(pn, pnstage) {
+  let last = getLH(pn, pnstage);
   let hunts = [];
   for (let i = 0; i < pnstage; i++) {
     if (last[i] === i+1) {
@@ -985,6 +991,30 @@ function findhunts(pn, pnstage) {
     }
   }
   return hunts;
+}
+
+function buildpborder(pn, pnstage) {
+  let pborder = [];
+  let lh = getLH(pn, pnstage);
+  let working = lh.filter((n,i) => n != i+1);
+  let pbs = [];
+  let working2 = working;
+  while (working2.length > 0) {
+    pbs.push(working2.shift());
+    let last = pbs[pbs.length-1];
+    let next = lh.indexOf(last)+1;
+    do {
+      pbs.push(next);
+      let i = working2.indexOf(next);
+      working2.splice(i, 1);
+      last = next;
+      next = lh.indexOf(last)+1;
+    } while (!pbs.includes(next));
+
+    pborder.push(pbs);
+    pbs = [];
+  }
+  return pborder;
 }
 
 //categorize tokens in supposed place notation
