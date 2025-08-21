@@ -806,7 +806,7 @@ function submitform() {
   blueBell = null;
   let form = document.getElementById("formform");
   let data = new FormData(form);
-  queryobj = {type: type};
+  queryobj = {};
   
   for (let key of data.entries()) {
     switch (key[0]) {
@@ -1206,6 +1206,9 @@ function drawstaff(title) {
     numsystems = Math.ceil(rowArray.length/numbars);
     lastsystem = rowArray.length%numbars === 0 ? numbars : rowArray.length%numbars;
   }
+
+  console.log("numsystems");
+  console.log(numsystems);
 
   for (let i = 0; i < numsystems; i++) {
     let w; 
