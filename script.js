@@ -136,7 +136,9 @@ function stagechange() {
   
   //remove blueBell options and add a blank selected option
   $('select.blueBell').children().detach();
-  $('<option>auto</option>').prop({selected: true}).appendTo('select.blueBell');
+  $('<option></option>').appendTo('select#sblueBell');
+  $('<option>auto</option>').appendTo('select.blueBell');
+  $("select.blueBell option:first-child").prop("selected", true);
   blueBell = null;
 
   blueBellOpts(stage);
