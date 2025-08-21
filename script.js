@@ -1185,7 +1185,7 @@ function drawdescript(group, x) {
 function drawstaff(title) {
   $("#container").append("<h1>"+title+"</h1>");
   let width = Math.floor(window.visualViewport.width/100)*100;
-  console.log("width", width);
+  //console.log("width", width);
   let numbars;
   let numsystems;
   let lastsystem;
@@ -1209,8 +1209,8 @@ function drawstaff(title) {
     lastsystem = rowArray.length%numbars === 0 ? numbars : rowArray.length%numbars;
   }
 
-  console.log("numsystems");
-  console.log(numsystems);
+  //console.log("numsystems");
+  //console.log(numsystems);
 
   for (let i = 0; i < numsystems; i++) {
     let w; 
@@ -1322,9 +1322,17 @@ function drawtime(timesig, system, startx) {
   return startx;
 }
 
+
 function drawnotes(rows, system, startx, blue) {
   let actTenor = queryobj.actTenor;
-  let tenY = actTenor[0] === "G" ? 95 : 90 - (actTenor.charCodeAt(0)-65)*5;
+  //set y coord of tenor
+  let tenY = 90 - (actTenor.charCodeAt(0)-65)*5;
+  if (["A", "B"].includes(actTenor[0]) && numbells < 9) {
+    if (!actTenor.includes("P") || numbells < 7) {
+      //move it an octave up to avoid ledger lines
+      tenY -= 35;
+    }
+  }
   let y;
   let barends = [];
 
