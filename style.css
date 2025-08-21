@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Helsinki";
+  src: url("https://github.com/orchestrali/mini-instinctive-metal/raw/refs/heads/staff/helsinki-webfont.ttf");
+  font-weight: normal;
+  font-style: normal;
+}
+
+
 *,
 *:before,
 *:after {
@@ -67,11 +75,11 @@
   }
   
   input {
-    /*margin-bottom: 10px;*/
     padding: 5px;
     border: 1px solid lightgrey;
     border-radius: 3px;
     font-size: 16px;
+    margin: 0 5px;
   }
   input:disabled {
     background-color: #e9e9e9;
@@ -110,7 +118,7 @@
     color: lightsteelblue;
   }
   
-  .hidden.category, .hidden {
+  .hidden {
     display: none;
   }
 
@@ -184,7 +192,7 @@
     padding-top: 5px;
   }
   
-  div.searchstrategy > div, div.gridtype > div {
+  div.searchstrategy > div, div.gridtype > div, div.type div {
     margin-bottom: 7px;
   }
   
@@ -242,9 +250,51 @@
     background-color: lightsteelblue;
   }
 
+  
+
+  /* form type/what */
+
+  fieldset#type ul {
+    padding-left: 0;
+  }
+
+  fieldset#type li {
+    flex: 1 1 auto;
+    padding: 5px;
+    border: 1px solid steelblue;
+    border-radius: 5px 5px 0 0;
+    background-color: lightsteelblue;
+  }
+  fieldset#type li.selected {
+    border-bottom: 1px solid rgb(204, 224, 244);
+    background-color: rgb(204, 224, 244);
+  }
+  fieldset#type li:hover {
+    cursor: pointer;
+  }
+
+  /* appearance stuff on form */
+
   div.type h3 {
     margin-top: 4px;
   }
+
+  div#timesig > p {
+    width: 100%;
+  }
+
+  div#timeOpts ul {
+    padding-left: 0;
+  }
+
+  li.time li {
+    margin-right: 20px;
+    font-family: Helsinki;
+    font-size: 35px;
+    line-height: 0.6;
+  }
+
+  
 }
 
 @media print {
