@@ -948,6 +948,224 @@ function drawdescript(group, x) {
   });
 }
 
+//drawing staff things
+
+function drawstaff() {
+  let width = Math.floor(window.visualViewport.width/100)*100;
+  let numbars;
+  let numsystems;
+  let lastsystem;
+  let blue = Number(queryobj.blueBell) > 0 ? Number(queryobj.blueBell) : null;
+
+  if (queryobj.mobile) {
+    numbars = 1;
+    numsystems = rowArray.length;
+    lastsystem = 1;
+  } else {
+    numbars = Math.floor(width/((numbells+2)*30));
+    numsystems = Math.ceil(rowArray.length/numbars);
+    lastsystem = rowArray.length%numbars === 0 ? numbars : rowArray.length%numbars;
+  }
+
+  for (let i = 0; i < numsystems; i++) {
+    let w; 
+    let tenor = queryobj.keysig;
+    if (sharps.includes(tenor)) {
+      w = 65 + sharps.indexOf(tenor)*10;
+    } else if (flats.includes(tenor)) {
+      w = 68 + flats.indexOf(tenor)*10;
+    } else {
+      w = 60;
+    }
+    if (i === 0 && queryobj.includeTime) {
+      w += 27;
+      if (queryobj.timesig.split("-").length > 2) {
+        w += 28;
+      }
+    }
+    
+    let length = i === numsystems-1 ? lastsystem : numbars;
+    for (let j = 0; j < length; j++) {
+      if (j > 0) w += 18;
+      w += numbells*30-8;
+      if (queryobj.gap) {
+        let barnum = i*numbars+j;
+        if (barnum%2 === 0) w += 30;
+      }
+    }
+    drawstaffsvg(rowArray.slice(i*numbars, (i+1)*numbars), w+5, i === 0, i === numsystems-1, blue);
+  }
+}
+
+function drawstaffsvg(arr, width, first, last, blue) {
+  let system = svg.svg($("#container"), null, null, width, 120, {class: "staff", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink"});
+  let clef = svg.group(system, {style: "stroke:black; stroke-width:1; fill:black;"});
+  //build clef
+  svg.circle(clef, 15, 80, 3);
+  svg.path(clef, "M12,80 a 5 5 0 0 0 11 0 l -5 -50", {fill: "none"});
+  svg.path(clef, "M 18 30 c -1 -8, -1 -12, 5 -18 l 2 4 c -5 6, -7 6, -7 14 m 7 -14 c 1 2.5, 5 20, -5 26 c -14 9, -12 26, 1 28 c -19 0, -16 -27, -2 -33 c 11 -9, 5 -18.5, 6 -21 m -4 53 a 8 8 0 1 0 -5 -4 a 10 10 0 1 1 5 4");
+  //build staff lines
+  let staff = svg.group(system, {style: "stroke:black; stroke-width:1; fill:none;"});
+  for (let i = 0; i < 5; i++) {
+    let y = i*10+30;
+    svg.line(staff, 2, y, width-5, y);
+  }
+  let startx = drawkey(queryobj.keysig, system);
+  if (first && queryobj.includeTime) {
+    startx = drawtime(queryobj.timesig, system, startx);
+  }
+  let barends = drawnotes(arr, system, startx, blue);
+  //draw barlines
+  for (let i = 0; i < barends.length; i++) {
+    if (last && i === barends.length-1) {
+      svg.path(clef, "M "+(barends[i]+1)+" 29.5 v 41", {"stroke-width": 3});
+      svg.path(clef, "M "+(barends[i]-3)+" 30 v 40");
+    } else {
+      svg.path(clef, "M "+barends[i]+" 30 v 40");
+    }
+  }
+  //draw bar number
+  svg.text(system, 2, 10, arr[0].rowNum.toString(), {style: "font-family:Verdana; font-size:10px;"});
+}
+
+function drawkey(tenor, system) {
+	let type;
+  let g = svg.group(system, {style: "stroke:black; stroke-width:1; fill:black;"});
+  let startx;
+
+  if (sharps.indexOf(tenor) > -1) {
+    type = 's';
+  } else if (flats.indexOf(tenor) > -1) {
+    type = 'f';
+  } else if (tenor === "C") {
+    startx = 60;
+  }
+
+  if (type === 's') {
+    startx = 65 + sharps.indexOf(tenor)*10;
+    for (let i = 0; i < sharps.indexOf(tenor)+1; i++) {
+      let path = ["M", 40+i*10, sharpy[i], "v 24 m 4 -25 v 24 m -6 -14 l 8 -3 v -2 l -8 3 m 0 12 l 8 -3 v -2 l -8 3"];
+      svg.path(g, path.join(" "));
+    }
+  } else if (type === "f") {
+    startx = 68 + flats.indexOf(tenor)*10;
+    for (let i = 0; i < flats.indexOf(tenor)+1; i++) {
+      let y = i*2.5 + 32.5 + (i%2)*-17.5;
+      let path = ["M", 40+i*10, y, "v 23.5 m 0 -10 c 6 -4 10 0 5 6 l -5 4 c 6 -4 6 -13 0 -10"];
+      svg.path(g, path.join(" "));
+    }
+  }
+  return startx;
+}
+
+function drawtime(timesig, system, startx) {
+	let nums = timesig.split("-");
+	let g = svg.group(system, {style: "font-family:Helsinki; fill:black; font-size:35px; text-anchor:middle;"});
+
+	for (let i = 0; i < nums.length; i++) {
+    let x = i < 2 ? startx-1 : startx+29;
+    if (plus.indexOf(nums[i]) > -1) x++;
+    let y = 40 + (i%2)*20;
+    svg.text(g, x, y, nums[i]);
+  }
+  
+  startx += 27;
+  if (nums.length > 2) {
+    startx += 28;
+  }
+  return startx;
+}
+
+function drawnotes(rows, system, startx, blue) {
+  let actTenor = queryobj.actTenor;
+  let tenY = actTenor[0] === "G" ? 95 : 90 - (actTenor.charCodeAt(0)-65)*5;
+  let y;
+  let barends = [];
+
+  if (actTenor.indexOf('P') > -1) {
+    let ys = dyPenta.slice(0, numbells).map(x => tenY-x).reverse();
+    y = function (bell) {
+      return ys[bell-1];
+    };
+  } else {
+    let b = tenY - numbells*5;
+    y = function (bell) {
+      return 5*bell + b;
+    };
+  }
+
+  let noteheads = svg.group(system, {style: "stroke:black; stroke-width:1; fill:black;"});
+  let stems = svg.group(system, {style: "stroke:black; stroke-width:1.5; fill:none;"});
+  let ledgers = svg.group(system, {style: "stroke:black; stroke-width:1.2; fill:none;"});
+  let barend;
+  let groups = {
+    noteheads: noteheads,
+    stems: stems,
+    ledgers: ledgers
+  };
+  let bgroups = {
+    noteheads: 1,
+    stems: 1.5,
+    ledgers: 1.2
+  };
+  for (let key in bgroups) {
+    let fill = key === "noteheads" ? "blue;" : "none;";
+    bgroups[key] = svg.group(system, {style: "stroke:blue; stroke-width:"+bgroups[key]+"; fill:"+fill});
+  }
+
+  for (let i = 0; i < rows.length; i++) {
+    for (let j = 0; j < numbells; j++) {
+      let current = rows[i].bells[j];
+      let gg = current === blue ? bgroups : groups;
+      let drawnote = (blue && queryobj.onlyblue) ? current === blue : true;
+      
+      if (drawnote) {
+        let cx = startx + j*30;
+        let cy = y(current);
+        svg.ellipse(gg.noteheads, cx, cy, 6, 4, {transform: "rotate(-35 "+cx+" "+cy+")"});
+
+        let stemx, stemdir;
+        if (cy <= 50) {
+          stemx = cx-5;
+          stemdir = 'v 35';
+        } else {
+          stemx = cx+5;
+          stemdir = 'v -35';
+        }
+        if (cy == 10 || cy >= 90) {
+          stemdir = 'V 50';
+        }
+        svg.path(gg.stems, ["M", stemx, cy, stemdir].join(" "));
+
+        if (cy >= 80) {
+          for (let k = 80; k <= cy; k += 10) {
+            svg.path(gg.ledgers, ["M", cx-11, k, "h 22"].join(" "));
+          }
+        } else if (cy <= 80) {
+          for (let k = 20; k >= cy; k -= 10) {
+            svg.path(gg.ledgers, ["M", cx-11, k, "h 22"].join(" "));
+          }
+        }
+      } else {
+        let x = startx + j*30 - 4;
+        svg.path(noteheads, "M "+x+" 35 l 6 8 c -4 7 -4 7 2 15 l -10 -11 c 6 -7 5 -7 2 -12 m 8 23 a 4.0311 5 -55 0 0 -4 7 a 4.032 5 -52 0 1 0 -11");
+      }
+      
+    }
+    if (queryobj.gap && rows[i].rowNum%2 === 0) {
+      let x = startx + numbells*30 -4;
+      svg.path(noteheads, "M "+x+" 35 l 6 8 c -4 7 -4 7 2 15 l -10 -11 c 6 -7 5 -7 2 -12 m 8 23 a 4.0311 5 -55 0 0 -4 7 a 4.032 5 -52 0 1 0 -11");
+      barend = startx+numbells*30+22;
+    } else {
+      barend = startx+numbells*30-8;
+    }
+    barends.push(barend);
+    startx = barend+18;
+  }
+  return barends;
+
+}
+
 
 // BELLRINGING FUNCTIONS
 
