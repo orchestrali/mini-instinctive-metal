@@ -8,6 +8,9 @@ var methodNameList;
 var bigmethodarr;
 //holder for jquery/svg functions
 var svg;
+//staff things
+const sharps = ['G', 'D', 'A', 'E', 'B', 'F♯'];
+const flats = ['F', 'B♭', 'E♭', 'A♭', 'D♭', 'G♭'];
 //type of display: grid, graph, staff, practice, simulator
 var type = "grid";
 //grid display options: basic-lines, everyline, bellgroups
@@ -132,7 +135,11 @@ function stagechange() {
 
   blueBellOpts(stage);
   
-  // BLUE BELL STUFF - include later!
+  //update staff options
+  let numBells = Number($("input#stenors").val()) + stage;
+  let keysig = $("select#keysig option:checked").val();
+  adjustTime(numBells);
+  tenOpts(keysig, numBells);
   /*
   
   
@@ -164,6 +171,36 @@ function changestrategy() {
   //$("div#searchby"+prev).slideUp(600, () => {
   //  $("div#searchby"+lookup).slideDown(600);
   //});
+}
+
+function typeliclick(e) {
+  let id = $(e.currentTarget).find("input").attr("id");
+  $("#"+id).prop("checked", true);
+  typechange();
+}
+
+function typechange() {
+  type = $("#type input:checked").attr("id");
+  $("#type li").removeClass("selected");
+  $("#type input:checked").parent("li").addClass("selected");
+  
+  // disable/enable form inputs
+  $("div.type").find(":input").prop("disabled", true);
+  $("div#"+type+"opts").find(":input").prop("disabled", false);
+  if (type === "grid") {
+    //toggleGridTypes();
+    // if it's a touch, don't allow showing pn
+    if ($("#touch").is(":checked")) {
+      $("#show-pn").prop("disabled", true);
+    }
+  }
+  
+  $(".type").addClass("hidden");
+  $("div#"+type+"opts").removeClass("hidden");
+  
+  //remove higher stages for graph and simulator
+  //I don't appear to be dealing with people having selected one of those stages
+  $("#stage option:nth-child(n+11)").prop("disabled", ["graph", "simulator"].includes(type));
 }
 
 function changegridtype() {
@@ -582,6 +619,171 @@ function blueBellOpts(stage) {
   for (let i = 1; i <= stage; ++i) {
     $('<option></option').text(i).val(i).appendTo('select.blueBell');
   }
+}
+
+// staff form options
+
+function toggleGap() {
+  stage = Number($('select#stage option:checked').val());
+  let numBells = Number($("input#stenors").val()) + stage;
+  
+  adjustTime(numBells);
+}
+
+function toggleTime() {
+  if (!$("#time-sig").is(":checked")) {
+    $("div#timeOpts").slideUp(1000, "swing");
+  } else if (stage > 0) {
+    let numBells = Number($("input#stenors").val()) + stage;
+    adjustTime(numBells);
+  }
+}
+
+//stage needs to actually be numBells
+function adjustTime(stage) {
+  //remove previous options
+  $("div#timeOpts > fieldset > ul > li").remove();
+  //handstroke gap?
+  let gap;
+  if ($("#handstroke-gap").is(":checked")) {
+    gap = true;
+    //console.log("include handstroke gap");
+  }
+  
+  //top numbers
+  let handTS = buildTime(stage);
+  let backTS = gap ? buildTime(stage+1) : [];
+  
+  //actually add the stuff
+  if ($("#time-sig").is(":checked")) {
+    $("div#timeOpts > fieldset > ul").append(timeOpts(handTS, backTS));
+    $("div#timeOpts").slideDown(1000, "swing");
+  }
+}
+
+//inputs are arrays of options for top number of timesig
+//if there is no handstroke gap, "back" will be empty
+function timeOpts(hand, back) {
+  let length = Math.max(hand.length, back.length);
+  let options = "";
+  let denoms = ["4", "2", "1"];
+  let ids = ["quarter", "half", "whole"];
+  
+  //hand has at least one number, which can go with 4 on the bottom
+  for (let i = 0; i < length; i++) {
+    let j = hand[i] ? i : 0;
+    let handT = hand[j];
+    let handB = denoms[j];
+    let nums = [handT, handB];
+    let backT, backB;
+    let b = back[i] ? i : back[0] ? 0 : -1;
+    if (b > -1) {
+      backT = back[b];
+      backB = denoms[b];
+      nums.push(backT, backB);
+    }
+    let value = nums.join("-");
+    //why did I think this needed updating? line break?
+    let dispvalh = `${handT} <br/> ${handB}`;
+    let dispvalb = backT && backB ? `${backT} <br/> ${backB}` : "";
+    
+    options += `<li class="time">
+    <label for="${ids[i]}">
+      <ul class="row">
+        <li>
+          <input type="radio" id="${ids[i]}" name="timesig" value="${value}" />
+        </li>
+        <li>
+          ${dispvalh}
+        </li>
+        <li>
+          ${dispvalb}
+        </li>
+      </ul>
+    </label>
+    </li>`;
+  }
+  return options;
+}
+
+//options for top number of time sig
+function buildTime(num) {
+  let options = [num];
+  if (num % 2 === 0) {
+    options.push(num/2);
+  }
+  if (num % 4 === 0) {
+    options.push(num/4);
+  }
+  return options;
+}
+
+function toggleKey() {
+  stage = Number($("select#stage option:checked").val());
+  let numBells = Number($("input#stenors").val()) + stage;
+  let keysig = $("select#keysig option:checked").val();
+  
+  if (stage > 0) {
+    tenOpts(keysig, numBells);
+  }
+}
+
+function tenOpts(keysig, numBells) {
+  //remove previous options
+  $("select#actTenor > option").remove();
+  //order of scale degrees that will have a flat
+  const sds = [4, 1, 5, 2, 6, 3, 7];
+  //given stage, how many tenor options are there
+  let numChoices = Math.min(13-numBells, 7);
+  //is the keysig in sharps or flats
+  let numS = sharps.indexOf(keysig)+1;
+  let numF = flats.indexOf(keysig)+1;
+  
+  let options = '';
+  //start with highest option
+  let letter = getChar(keysig, numChoices-1);
+  for (let i = 0; i < numChoices; i++) {
+    let selected = i === numChoices-1 ? "selected" : "";
+    let sd = numChoices-i;
+    let a = "";
+    
+    //if sharp key
+    if (numS > 0) {
+      if (sds.reverse().slice(0, numS).indexOf(sd) > -1) {
+        a = "♯";
+      }
+      sds.reverse();
+    }
+    //if flat key
+    if (numF > 0 && sds.slice(0, numF).indexOf(sd) > -1) {
+      a = "♭";
+    }
+    
+    options += `
+    <option value="${letter}" ${selected}>${letter}${a}</option>`;
+    letter = getChar(letter, -1);
+  }
+  if (numBells < 11) {
+    options += `
+    <option value="${keysig[0]}P">${keysig} pentatonic</option>`;
+  }
+  
+  $("select#actTenor").append(options);
+}
+
+//get next or previous letter of musical alphabet
+function getChar(char, dir) {
+  let current = char.charCodeAt(0);
+  let next = current + dir;
+  
+  while (next < 65) {
+    next += 7;
+  }
+  while (next > 71) {
+    next -= 7;
+  }
+  
+  return String.fromCharCode(next);
 }
 
 
@@ -1029,7 +1231,7 @@ function drawstaffsvg(arr, width, first, last, blue) {
 }
 
 function drawkey(tenor, system) {
-	let type;
+  let type;
   let g = svg.group(system, {style: "stroke:black; stroke-width:1; fill:black;"});
   let startx;
 
