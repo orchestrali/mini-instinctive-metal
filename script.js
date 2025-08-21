@@ -1305,6 +1305,7 @@ function drawkey(tenor, system) {
 
 function drawtime(timesig, system, startx) {
   let nums = timesig.split("-");
+  let plus = ['5','8','9'];
   let g = svg.group(system, {style: "font-family:Helsinki; fill:black; font-size:35px; text-anchor:middle;"});
 
   for (let i = 0; i < nums.length; i++) {
