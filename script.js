@@ -964,8 +964,9 @@ function buildrowarr() {
     rowArray.forEach(r => {
       r.bells.push(...tenors);
     });
-    numbells = rowArray[0].bells.length;
+    
   }
+  numbells = rowArray[0].bells.length;
 }
 
 //draw stuff
@@ -1184,6 +1185,7 @@ function drawdescript(group, x) {
 function drawstaff(title) {
   $("#container").append("<h1>"+title+"</h1>");
   let width = Math.floor(window.visualViewport.width/100)*100;
+  console.log("width", width);
   let numbars;
   let numsystems;
   let lastsystem;
