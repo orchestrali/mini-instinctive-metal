@@ -69,7 +69,13 @@ $(function(){
   });
   $("#methodName").on("keyup", methodnamekeyup);
 
+  $("#type").change(typechange);
+  $("#type li").on("click", typeliclick);
   $("#gridtype").change(changegridtype);
+
+  $("#keysig").change(toggleKey);
+  $("#time-sig").change(toggleTime);
+  $("stenors,#handstroke-gap").change(toggleGap);
   
   $("#submit").on("click", submitform);
   
