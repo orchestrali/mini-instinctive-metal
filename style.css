@@ -269,7 +269,7 @@
     border-bottom: 1px solid rgb(204, 224, 244);
     background-color: rgb(204, 224, 244);
   }
-  fieldset#type li:hover {
+  fieldset#type li:hover, fieldset#type label:hover {
     cursor: pointer;
   }
 
