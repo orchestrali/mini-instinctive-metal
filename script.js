@@ -838,8 +838,16 @@ function resultsrouter(obj) {
   
   if (title) {
     //console.log(method.hunts);
+
+    switch (obj.type) {
+      case "grid":
+        routergrid(obj, title);
+        break;
+      case "staff":
+        drawstaff(title);
+        break;
+    }
     
-    routergrid(obj, title);
     
     
   } else {
@@ -1152,12 +1160,21 @@ function drawdescript(group, x) {
 
 //drawing staff things
 
-function drawstaff() {
+function drawstaff(title) {
+  $("#container").append("<h1>"+title+"</h1>");
   let width = Math.floor(window.visualViewport.width/100)*100;
   let numbars;
   let numsystems;
   let lastsystem;
-  let blue = Number(queryobj.blueBell) > 0 ? Number(queryobj.blueBell) : null;
+  let blue;
+  if (queryobj.blueBell === "auto") {
+    let b = chooseworking(1);
+    blue = b[0];
+    blueBell = blue;
+  } else {
+    blue = Number(queryobj.blueBell) > 0 ? Number(queryobj.blueBell) : null;
+  }
+  
 
   if (queryobj.mobile) {
     numbars = 1;
@@ -1179,7 +1196,7 @@ function drawstaff() {
     } else {
       w = 60;
     }
-    if (i === 0 && queryobj.includeTime) {
+    if (i === 0 && queryobj.includeTime && queryobj.timesig) {
       w += 27;
       if (queryobj.timesig.split("-").length > 2) {
         w += 28;
@@ -1261,10 +1278,10 @@ function drawkey(tenor, system) {
 }
 
 function drawtime(timesig, system, startx) {
-	let nums = timesig.split("-");
-	let g = svg.group(system, {style: "font-family:Helsinki; fill:black; font-size:35px; text-anchor:middle;"});
+  let nums = timesig.split("-");
+  let g = svg.group(system, {style: "font-family:Helsinki; fill:black; font-size:35px; text-anchor:middle;"});
 
-	for (let i = 0; i < nums.length; i++) {
+  for (let i = 0; i < nums.length; i++) {
     let x = i < 2 ? startx-1 : startx+29;
     if (plus.indexOf(nums[i]) > -1) x++;
     let y = 40 + (i%2)*20;
