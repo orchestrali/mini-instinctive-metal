@@ -22,6 +22,8 @@ let gridtype = "gridline";
 var lookup = "name";
 //method stage and class set by form
 var stage = null;
+//stage plus tenors
+var numbells;
 var checkedClass;
 
 
@@ -808,7 +810,7 @@ function submitform() {
   
   for (let key of data.entries()) {
     switch (key[0]) {
-      case "stage":
+      case "stage": case "tenors":
         queryobj[key[0]] = Number(key[1]);
         break;
       case "gridcolors":
@@ -953,6 +955,17 @@ function buildrowarr() {
     addLHs(6, 3, "new six");
   }
   addLHs(method.leadLength, 0, "leadhead");
+
+  if (queryobj.tenors) {
+    let tenors = [];
+    for (let i = 0; i < queryobj.tenors; i++) {
+      tenors.push(stage+1+i);
+    }
+    rowArray.forEach(r => {
+      r.bells.push(...tenors);
+    });
+    numbells = rowArray[0].bells.length;
+  }
 }
 
 //draw stuff
