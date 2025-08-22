@@ -298,17 +298,13 @@
 }
 
 @media print {
-  header {
+  header, form {
     display: none;
   }
 
   body {
     font-family: helvetica, arial, sans-serif;
     margin: 25px;
-  }
-
-  form {
-    display: none;
   }
 
   svg.contain {
