@@ -176,7 +176,7 @@ function stagechange() {
 function stafftenors() {
   numbells = Number($("input#stenors").val()) + stage;
   if (numbells > 12) {
-    $('select#keysig option:nth-child(-n+7)').addClass("hidden");
+    $('select#keysig option:nth-child(-n+6)').addClass("hidden");
   } else {
     $('select#keysig option.hidden').removeClass("hidden");
   }
@@ -767,7 +767,7 @@ function tenOpts(keysig, numBells) {
   //distinction at 12 bells
   let big = numBells > 12;
   //given stage, how many tenor options are there
-  let numChoices = Math.min(13-numBells, 7);
+  let numChoices = big ? 1 : Math.min(13-numBells, 7);
   //is the keysig in sharps or flats
   let numS = sharps.indexOf(keysig)+1;
   let numF = flats.indexOf(keysig)+1;
