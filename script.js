@@ -1393,7 +1393,7 @@ function drawnotes(rows, system, startx, blue) {
   for (let i = 0; i < rows.length; i++) {
     for (let j = 0; j < numbells; j++) {
       let current = rows[i].bells[j];
-      let gg = current === blue ? bgroups : groups;
+      let gg = current === blue && !queryobj.onlyblue ? bgroups : groups;
       let drawnote = (blue && queryobj.onlyblue) ? current === blue : true;
       
       if (drawnote) {
