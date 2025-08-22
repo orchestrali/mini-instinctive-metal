@@ -79,7 +79,8 @@ $(function(){
 
   $("#keysig").change(toggleKey);
   $("#time-sig").change(toggleTime);
-  $("#stenors,#handstroke-gap").change(toggleGap);
+  $("#handstroke-gap").change(adjustTime);
+  $("#stenors").change(stafftenors);
   
   $("#submit").on("click", submitform);
   
@@ -111,6 +112,7 @@ function stagechange() {
   checkedClass = "";
 
   $("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
+  typeinputs();
   
   //remove methods from name dropdown
   $('ul#methodList').children().detach();
@@ -146,12 +148,12 @@ function stagechange() {
   blueBell = null;
 
   blueBellOpts(stage);
+
+  //tenors behind
+  $('input[name="tenors"]').attr("max", 16-stage);
   
   //update staff options
-  let numBells = Number($("input#stenors").val()) + stage;
-  let keysig = $("select#keysig option:checked").val();
-  adjustTime(numBells);
-  tenOpts(keysig, numBells);
+  stafftenors();
   /*
   
   
@@ -168,6 +170,19 @@ function stagechange() {
   }
   
   */
+}
+
+
+function stafftenors() {
+  numbells = Number($("input#stenors").val()) + stage;
+  if (numbells > 12) {
+    $('select#keysig option:nth-child(-n+7)').addClass("hidden");
+  } else {
+    $('select#keysig option.hidden').removeClass("hidden");
+  }
+  let keysig = $("select#keysig option:checked").val();
+  adjustTime();
+  tenOpts(keysig, numbells);
 }
 
 //switch between method name, pn, or complib
@@ -191,14 +206,9 @@ function typeliclick(e) {
   typechange();
 }
 
-function typechange() {
-  type = $("#type input:checked").attr("id");
-  $("#type li").removeClass("selected");
-  $("#type input:checked").parent("li").addClass("selected");
-  
-  // disable/enable form inputs
+function typeinputs() {
   $("div.type").find(":input").prop("disabled", true);
-  $("div#"+type+"opts").find(":input").prop("disabled", false);
+  $("div#"+type+"opts").find(":input").prop("disabled", stage === null);
   if (type === "grid") {
     //toggleGridTypes();
     // if it's a touch, don't allow showing pn
@@ -206,6 +216,17 @@ function typechange() {
       $("#show-pn").prop("disabled", true);
     }
   }
+}
+
+function typechange() {
+  type = $("#type input:checked").attr("id");
+  $("#type li").removeClass("selected");
+  $("#type input:checked").parent("li").addClass("selected");
+  
+  // disable/enable form inputs
+  typeinputs();
+  
+  
   
   $(".type").addClass("hidden");
   $("div#"+type+"opts").removeClass("hidden");
@@ -635,26 +656,23 @@ function blueBellOpts(stage) {
 
 // staff form options
 
-function toggleGap() {
-  stage = Number($('select#stage option:checked').val());
-  let numBells = Number($("input#stenors").val()) + stage;
-  
-  adjustTime(numBells);
-}
 
 function toggleTime() {
   if (!$("#time-sig").is(":checked")) {
     $("div#timeOpts").slideUp(1000, "swing");
   } else if (stage > 0) {
-    let numBells = Number($("input#stenors").val()) + stage;
-    adjustTime(numBells);
+    adjustTime();
   }
 }
 
-//stage needs to actually be numBells
-function adjustTime(stage) {
+
+//
+function adjustTime() {
   //remove previous options
   $("div#timeOpts > fieldset > ul > li").remove();
+  //set vars
+  stage = Number($('select#stage option:checked').val());
+  numbells = Number($('input#stenors').val()) + stage;
   //handstroke gap?
   let gap;
   if ($("#handstroke-gap").is(":checked")) {
@@ -663,8 +681,8 @@ function adjustTime(stage) {
   }
   
   //top numbers
-  let handTS = buildTime(stage);
-  let backTS = gap ? buildTime(stage+1) : [];
+  let handTS = buildTime(numbells);
+  let backTS = gap ? buildTime(numbells+1) : [];
   
   //actually add the stuff
   if ($("#time-sig").is(":checked")) {
@@ -740,11 +758,14 @@ function toggleKey() {
   }
 }
 
+//given keysig (there is always one selected) and numbells (includes tenors behind), offer options for tenor note—equivalent to different modes
 function tenOpts(keysig, numBells) {
   //remove previous options
   $("select#actTenor > option").remove();
   //order of scale degrees that will have a flat
   const sds = [4, 1, 5, 2, 6, 3, 7];
+  //distinction at 12 bells
+  let big = numBells > 12;
   //given stage, how many tenor options are there
   let numChoices = Math.min(13-numBells, 7);
   //is the keysig in sharps or flats
