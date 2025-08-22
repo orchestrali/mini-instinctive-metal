@@ -1279,7 +1279,7 @@ function drawstaffsvg(arr, width, first, last, blue) {
     svg.line(staff, 2, y, width-5, y);
   }
   let startx = drawkey(queryobj.keysig, system);
-  if (first && queryobj.includeTime) {
+  if (first && queryobj.includeTime && queryobj.timesig) {
     startx = drawtime(queryobj.timesig, system, startx);
   }
   let barends = drawnotes(arr, system, startx, blue);
@@ -1393,6 +1393,8 @@ function drawnotes(rows, system, startx, blue) {
   for (let i = 0; i < rows.length; i++) {
     for (let j = 0; j < numbells; j++) {
       let current = rows[i].bells[j];
+      //if the current bell is highlighted, make it blue
+      //if only the current bell is being shown, just make it black
       let gg = current === blue && !queryobj.onlyblue ? bgroups : groups;
       let drawnote = (blue && queryobj.onlyblue) ? current === blue : true;
       
