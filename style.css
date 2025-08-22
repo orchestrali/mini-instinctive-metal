@@ -294,11 +294,15 @@
     line-height: 0.6;
   }
 
-  
+  /* results */
+
+  svg.staff {
+    display: block;
+  }
 }
 
 @media print {
-  header, form {
+  header, form, .header {
     display: none;
   }
 
