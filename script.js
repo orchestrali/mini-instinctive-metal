@@ -176,9 +176,9 @@ function stagechange() {
 function stafftenors() {
   numbells = Number($("input#stenors").val()) + stage;
   if (numbells > 12) {
-    $('select#keysig option:nth-child(-n+6)').addClass("hidden");
+    $('select#keysig option:nth-child(-n+6)').prop("disabled", true);
   } else {
-    $('select#keysig option.hidden').removeClass("hidden");
+    $('select#keysig option:disabled').prop("disabled", false);
   }
   let keysig = $("select#keysig option:checked").val();
   adjustTime();
