@@ -11,6 +11,8 @@ var svg;
 //staff things
 const sharps = ['G', 'D', 'A', 'E', 'B', 'F♯'];
 const flats = ['F', 'B♭', 'E♭', 'A♭', 'D♭', 'G♭'];
+const sharpy = [19, 34, 14, 29, 44, 24];
+const dyPenta = [0, 5, 10, 20, 25, 35, 40, 45, 55, 60];
 //type of display: grid, graph, staff, practice, simulator
 var type = "grid";
 //grid display options: basic-lines, everyline, bellgroups
@@ -77,7 +79,7 @@ $(function(){
 
   $("#keysig").change(toggleKey);
   $("#time-sig").change(toggleTime);
-  $("stenors,#handstroke-gap").change(toggleGap);
+  $("#stenors,#handstroke-gap").change(toggleGap);
   
   $("#submit").on("click", submitform);
   
