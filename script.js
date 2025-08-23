@@ -1221,47 +1221,49 @@ function drawstaff(title) {
     blue = Number(queryobj.blueBell) > 0 ? Number(queryobj.blueBell) : null;
   }
   
-
+  //don't include rowzero in these calculations
   if (queryobj.mobile) {
     numbars = 1;
-    numsystems = rowArray.length;
+    numsystems = rowArray.length-1;
     lastsystem = 1;
   } else {
     numbars = Math.floor(width/((numbells+2)*30));
-    numsystems = Math.ceil(rowArray.length/numbars);
-    lastsystem = rowArray.length%numbars === 0 ? numbars : rowArray.length%numbars;
+    numsystems = Math.ceil((rowArray.length-1)/numbars);
+    lastsystem = (rowArray.length-1)%numbars === 0 ? numbars : (rowArray.length-1)%numbars;
   }
+
+  //width doesn't need to be calculated each time!
+  let w; 
+  let tenor = queryobj.keysig;
+  if (sharps.includes(tenor)) {
+    w = 65 + sharps.indexOf(tenor)*10;
+  } else if (flats.includes(tenor)) {
+    w = 68 + flats.indexOf(tenor)*10;
+  } else {
+    w = 60;
+  }
+  let firstwidth = w;
+  if (queryobj.includeTime && queryobj.timesig) {
+    firstwidth += 27;
+    if (queryobj.timesig.split("-").length > 2) {
+      firstwidth += 28;
+    }
+  }
+  firstwidth += numbells*30-8;
+  w += (numbells*30-8)*numbars + (numbars-1)*18;
+  if (queryobj.gap) {
+    firstwidth += 30;
+    w += Math.ceil(numbars/2)*30;
+  }
+  //draw starting leadhead as own system
+  drawstaffsvg([rowArray[0]], firstwidth+5, true, false, blue);
 
   //console.log("numsystems");
   //console.log(numsystems);
 
   for (let i = 0; i < numsystems; i++) {
-    let w; 
-    let tenor = queryobj.keysig;
-    if (sharps.includes(tenor)) {
-      w = 65 + sharps.indexOf(tenor)*10;
-    } else if (flats.includes(tenor)) {
-      w = 68 + flats.indexOf(tenor)*10;
-    } else {
-      w = 60;
-    }
-    if (i === 0 && queryobj.includeTime && queryobj.timesig) {
-      w += 27;
-      if (queryobj.timesig.split("-").length > 2) {
-        w += 28;
-      }
-    }
     
-    let length = i === numsystems-1 ? lastsystem : numbars;
-    for (let j = 0; j < length; j++) {
-      if (j > 0) w += 18;
-      w += numbells*30-8;
-      if (queryobj.gap) {
-        let barnum = i*numbars+j;
-        if (barnum%2 === 0) w += 30;
-      }
-    }
-    drawstaffsvg(rowArray.slice(i*numbars, (i+1)*numbars), w+5, i === 0, i === numsystems-1, blue);
+    drawstaffsvg(rowArray.slice(i*numbars+1, (i+1)*numbars+1), w+5, false, i === numsystems-1, blue);
   }
 }
 
