@@ -135,52 +135,142 @@
           
         </div>
         <div class="line"></div>
-        <div id="gridopts" class="type">
-          <h3>
-            Display options
-          </h3>
-          <fieldset class="borderless" id="gridtype">
-            <legend class="bold">
-              Display as:
-            </legend>
-            <ul>
-              <li><label><input type="radio" name="gridtype" value="gridline" checked />line(s)</label></li>
-              <li><label><input type="radio" name="gridtype" value="gridgrid" />grid</label></li>
+        <div id="what" class="category">
+          <fieldset id="type" class="borderless">
+            <ul class="row">
+              <li class="selected">
+                <label for="grid">Method printer</label>
+                <input type="radio" id="grid" name="type" value="grid" class="hidden" checked/>
+              </li>
+              <li>
+                <label for="staff">Staff notation</label>
+                <input type="radio" id="staff" name="type" value="staff" class="hidden"/>
+              </li>
             </ul>
           </fieldset>
-          
-          <div class="gridtype" id="gridline">
+          <div id="gridopts" class="type">
+            <h3>
+              Display options
+            </h3>
+            <fieldset class="borderless" id="gridtype">
+              <legend class="bold">
+                Display as:
+              </legend>
+              <ul>
+                <li><label><input type="radio" name="gridtype" value="gridline" checked />line(s)</label></li>
+                <li><label><input type="radio" name="gridtype" value="gridgrid" />grid</label></li>
+              </ul>
+            </fieldset>
+            
+            <div class="gridtype" id="gridline">
+              <div>
+                <label><input type="checkbox" checked id="show-nums" name="numbers" value="show" />Show numbers</label>
+              </div>
+              <div>
+                <label for="blueBell">
+                  Draw path for bell:
+                </label>
+                <select id="blueBell" name="blueBell" class="blueBell">
+        
+                </select>
+              </div>
+              <div>
+                <label>
+                  <input type="checkbox" id="describe" name="describe" value="show" />Show description of the blue line
+                </label>
+              </div>
+            </div>
+            <div class="gridtype hidden" id="gridgrid">
+              <fieldset class="borderless">
+                <legend>Draw working bells:</legend>
+                <ul>
+                  <li>
+                    <label><input type="radio" name="gridcolors" value="0" />same color</label>
+                  </li>
+                  <li>
+                    <label><input type="radio" name="gridcolors" value="colors" checked />different colors</label>
+                  </li>
+                </ul>
+              </fieldset>
+            </div>
+                  
+          </div>
+          <div id="staffopts" class="type hidden">
+            <h3>
+              Display options
+            </h3>
             <div>
-              <label><input type="checkbox" checked id="show-nums" name="numbers" value="show" />Show numbers</label>
+              <label>Tenor(s) behind: 
+                <input type="number" id="stenors" name="tenors" value="0" />
+              </label>
             </div>
             <div>
-              <label for="blueBell">
-                Draw path for bell:
+              <label for="handstroke-gap">
+                <input type="checkbox" checked id="handstroke-gap" name="gap" value="yes" />Include handstroke gap
               </label>
-              <select id="blueBell" name="blueBell" class="blueBell">
-      
+            </div>
+            <div id="timesig" class="flex">
+              <p>
+                <label for="time-sig">
+                  <input type="checkbox" checked id="time-sig" name="includeTime" value="yes" />Include time signature
+                </label>
+              </p>
+              <div id="timeOpts" class="hidden">
+                <fieldset>
+                  <legend>Time signature</legend>
+                  <ul>
+                    
+                  </ul>
+                </fieldset>
+              </div>
+            </div>
+            <div class="input">
+              <span>
+                <label for="keysig">
+                  Tenor/key signature:
+                </label>
+                <select id="keysig" name="keysig">
+                  <option value="F♯">F♯ / 6 sharps</option>
+                  <option value="F">F / 1 flat</option>
+                  <option value="E">E / 4 sharps</option>
+                  <option value="E♭">E♭ / 3 flats</option>
+                  <option value="D">D / 2 sharps</option>
+                  <option value="D♭">D♭ / 5 flats</option>
+                  <option value="C" selected="">C / 0</option>
+                  <option value="B">B / 5 sharps</option>
+                  <option value="B♭">B♭ / 2 flats</option>
+                  <option value="A">A / 3 sharps</option>
+                  <option value="A♭">A♭ / 4 flats</option>
+                  <option value="G">G / 1 sharp</option>
+                  <option value="G♭">G♭ / 6 flats</option>
+                </select>
+              </span>
+              <span>
+                <label for="actTenor">
+                  Acting tenor:
+                </label>
+                <select id="actTenor" name="actTenor">
+                  <option value="" disabled selected></option>
+                </select>
+              </span>
+            </div>
+            <div class="input">
+              <label for="blueBell">
+                Choose bell to highlight (optional):
+              </label>
+              <select id="sblueBell" name="blueBell" class="blueBell">
+                
               </select>
+              <label>
+                <input type="checkbox" name="onlyblue" /> show only this bell
+              </label>
             </div>
             <div>
               <label>
-                <input type="checkbox" id="describe" name="describe" value="show" />Show description of the blue line
+                <input type="checkbox" id="mobile" name="mobile" value="yes" />Mobile version
               </label>
             </div>
           </div>
-          <div class="gridtype hidden" id="gridgrid">
-            <fieldset class="borderless">
-              <legend>Draw working bells:</legend>
-              <ul>
-                <li>
-                  <label><input type="radio" name="gridcolors" value="0" />same color</label>
-                </li>
-                <li>
-                  <label><input type="radio" name="gridcolors" value="colors" checked />different colors</label>
-                </li>
-              </ul>
-            </fieldset>
-          </div>
-                
         </div>
         <button type="button" id="submit">Submit</button>
       </form>

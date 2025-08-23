@@ -8,6 +8,11 @@ var methodNameList;
 var bigmethodarr;
 //holder for jquery/svg functions
 var svg;
+//staff things
+const sharps = ['G', 'D', 'A', 'E', 'B', 'F♯'];
+const flats = ['F', 'B♭', 'E♭', 'A♭', 'D♭', 'G♭'];
+const sharpy = [19, 34, 14, 29, 44, 24];
+const dyPenta = [0, 5, 10, 20, 25, 35, 40, 45, 55, 60];
 //type of display: grid, graph, staff, practice, simulator
 var type = "grid";
 //grid display options: basic-lines, everyline, bellgroups
@@ -19,6 +24,8 @@ let gridtype = "gridline";
 var lookup = "name";
 //method stage and class set by form
 var stage = null;
+//stage plus tenors
+var numbells;
 var checkedClass;
 
 
@@ -66,7 +73,14 @@ $(function(){
   });
   $("#methodName").on("keyup", methodnamekeyup);
 
+  $("#type").change(typechange);
+  $("#type li").on("click", typeliclick);
   $("#gridtype").change(changegridtype);
+
+  $("#keysig").change(toggleKey);
+  $("#time-sig").change(toggleTime);
+  $("#handstroke-gap").change(adjustTime);
+  $("#stenors").change(stafftenors);
   
   $("#submit").on("click", submitform);
   
@@ -98,6 +112,7 @@ function stagechange() {
   checkedClass = "";
 
   $("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
+  typeinputs();
   
   //remove methods from name dropdown
   $('ul#methodList').children().detach();
@@ -127,12 +142,18 @@ function stagechange() {
   
   //remove blueBell options and add a blank selected option
   $('select.blueBell').children().detach();
-  $('<option>auto</option>').prop({selected: true}).appendTo('select.blueBell');
+  $('<option></option>').appendTo('select#sblueBell');
+  $('<option>auto</option>').appendTo('select.blueBell');
+  $("select.blueBell option:first-child").prop("selected", true);
   blueBell = null;
 
   blueBellOpts(stage);
+
+  //tenors behind
+  $('input[name="tenors"]').attr("max", 16-stage);
   
-  // BLUE BELL STUFF - include later!
+  //update staff options
+  stafftenors();
   /*
   
   
@@ -151,6 +172,19 @@ function stagechange() {
   */
 }
 
+
+function stafftenors() {
+  numbells = Number($("input#stenors").val()) + stage;
+  if (numbells > 12) {
+    $('select#keysig option:nth-child(-n+6)').prop("disabled", true);
+  } else {
+    $('select#keysig option:disabled').prop("disabled", false);
+  }
+  let keysig = $("select#keysig option:checked").val();
+  adjustTime();
+  tenOpts(keysig, numbells);
+}
+
 //switch between method name, pn, or complib
 function changestrategy() {
   let prev = lookup;
@@ -164,6 +198,42 @@ function changestrategy() {
   //$("div#searchby"+prev).slideUp(600, () => {
   //  $("div#searchby"+lookup).slideDown(600);
   //});
+}
+
+function typeliclick(e) {
+  let id = $(e.currentTarget).find("input").attr("id");
+  $("#"+id).prop("checked", true);
+  typechange();
+}
+
+function typeinputs() {
+  $("div.type").find(":input").prop("disabled", true);
+  $("div#"+type+"opts").find(":input").prop("disabled", stage === null);
+  if (type === "grid") {
+    //toggleGridTypes();
+    // if it's a touch, don't allow showing pn
+    if ($("#touch").is(":checked")) {
+      $("#show-pn").prop("disabled", true);
+    }
+  }
+}
+
+function typechange() {
+  type = $("#type input:checked").attr("id");
+  $("#type li").removeClass("selected");
+  $("#type input:checked").parent("li").addClass("selected");
+  
+  // disable/enable form inputs
+  typeinputs();
+  
+  
+  
+  $(".type").addClass("hidden");
+  $("div#"+type+"opts").removeClass("hidden");
+  
+  //remove higher stages for graph and simulator
+  //I don't appear to be dealing with people having selected one of those stages
+  $("#stage option:nth-child(n+11)").prop("disabled", ["graph", "simulator"].includes(type));
 }
 
 function changegridtype() {
@@ -584,6 +654,171 @@ function blueBellOpts(stage) {
   }
 }
 
+// staff form options
+
+
+function toggleTime() {
+  if (!$("#time-sig").is(":checked")) {
+    $("div#timeOpts").slideUp(1000, "swing");
+  } else if (stage > 0) {
+    adjustTime();
+  }
+}
+
+
+//
+function adjustTime() {
+  //remove previous options
+  $("div#timeOpts > fieldset > ul > li").remove();
+  //set vars
+  stage = Number($('select#stage option:checked').val());
+  numbells = Number($('input#stenors').val()) + stage;
+  //handstroke gap?
+  let gap;
+  if ($("#handstroke-gap").is(":checked")) {
+    gap = true;
+    //console.log("include handstroke gap");
+  }
+  
+  //top numbers
+  let handTS = buildTime(numbells);
+  let backTS = gap ? buildTime(numbells+1) : [];
+  
+  //actually add the stuff
+  if ($("#time-sig").is(":checked")) {
+    $("div#timeOpts > fieldset > ul").append(timeOpts(handTS, backTS));
+    $("div#timeOpts").slideDown(1000, "swing");
+  }
+}
+
+//inputs are arrays of options for top number of timesig
+//if there is no handstroke gap, "back" will be empty
+function timeOpts(hand, back) {
+  let length = Math.max(hand.length, back.length);
+  let options = "";
+  let denoms = ["4", "2", "1"];
+  let ids = ["quarter", "half", "whole"];
+  
+  //hand has at least one number, which can go with 4 on the bottom
+  for (let i = 0; i < length; i++) {
+    let j = hand[i] ? i : 0;
+    let handT = hand[j];
+    let handB = denoms[j];
+    let nums = [handT, handB];
+    let backT, backB;
+    let b = back[i] ? i : back[0] ? 0 : -1;
+    if (b > -1) {
+      backT = back[b];
+      backB = denoms[b];
+      nums.push(backT, backB);
+    }
+    let value = nums.join("-");
+    //why did I think this needed updating? line break?
+    let dispvalh = `${handT} <br/> ${handB}`;
+    let dispvalb = backT && backB ? `${backT} <br/> ${backB}` : "";
+    
+    options += `<li class="time">
+    <label for="${ids[i]}">
+      <ul class="row">
+        <li>
+          <input type="radio" id="${ids[i]}" name="timesig" value="${value}" />
+        </li>
+        <li>
+          ${dispvalh}
+        </li>
+        <li>
+          ${dispvalb}
+        </li>
+      </ul>
+    </label>
+    </li>`;
+  }
+  return options;
+}
+
+//options for top number of time sig
+function buildTime(num) {
+  let options = [num];
+  if (num % 2 === 0) {
+    options.push(num/2);
+  }
+  if (num % 4 === 0) {
+    options.push(num/4);
+  }
+  return options;
+}
+
+function toggleKey() {
+  stage = Number($("select#stage option:checked").val());
+  let numBells = Number($("input#stenors").val()) + stage;
+  let keysig = $("select#keysig option:checked").val();
+  
+  if (stage > 0) {
+    tenOpts(keysig, numBells);
+  }
+}
+
+//given keysig (there is always one selected) and numbells (includes tenors behind), offer options for tenor note—equivalent to different modes
+function tenOpts(keysig, numBells) {
+  //remove previous options
+  $("select#actTenor > option").remove();
+  //order of scale degrees that will have a flat
+  const sds = [4, 1, 5, 2, 6, 3, 7];
+  //distinction at 12 bells
+  let big = numBells > 12;
+  //given stage, how many tenor options are there
+  let numChoices = big ? 1 : Math.min(13-numBells, 7);
+  //is the keysig in sharps or flats
+  let numS = sharps.indexOf(keysig)+1;
+  let numF = flats.indexOf(keysig)+1;
+  
+  let options = '';
+  //start with highest option
+  let letter = getChar(keysig, numChoices-1);
+  for (let i = 0; i < numChoices; i++) {
+    let selected = i === numChoices-1 ? "selected" : "";
+    let sd = numChoices-i;
+    let a = "";
+    
+    //if sharp key
+    if (numS > 0) {
+      if (sds.reverse().slice(0, numS).indexOf(sd) > -1) {
+        a = "♯";
+      }
+      sds.reverse();
+    }
+    //if flat key
+    if (numF > 0 && sds.slice(0, numF).indexOf(sd) > -1) {
+      a = "♭";
+    }
+    
+    options += `
+    <option value="${letter}" ${selected}>${letter}${a}</option>`;
+    letter = getChar(letter, -1);
+  }
+  if (numBells < 11) {
+    options += `
+    <option value="${keysig[0]}P">${keysig} pentatonic</option>`;
+  }
+  
+  $("select#actTenor").append(options);
+}
+
+//get next or previous letter of musical alphabet
+function getChar(char, dir) {
+  let current = char.charCodeAt(0);
+  let next = current + dir;
+  
+  while (next < 65) {
+    next += 7;
+  }
+  while (next > 71) {
+    next -= 7;
+  }
+  
+  return String.fromCharCode(next);
+}
+
 
 // BASIC SUBMIT
 
@@ -594,11 +829,11 @@ function submitform() {
   blueBell = null;
   let form = document.getElementById("formform");
   let data = new FormData(form);
-  queryobj = {type: type};
+  queryobj = {};
   
   for (let key of data.entries()) {
     switch (key[0]) {
-      case "stage":
+      case "stage": case "tenors":
         queryobj[key[0]] = Number(key[1]);
         break;
       case "gridcolors":
@@ -636,8 +871,16 @@ function resultsrouter(obj) {
   
   if (title) {
     //console.log(method.hunts);
+
+    switch (obj.type) {
+      case "grid":
+        routergrid(obj, title);
+        break;
+      case "staff":
+        drawstaff(title);
+        break;
+    }
     
-    routergrid(obj, title);
     
     
   } else {
@@ -735,6 +978,18 @@ function buildrowarr() {
     addLHs(6, 3, "new six");
   }
   addLHs(method.leadLength, 0, "leadhead");
+
+  if (queryobj.tenors) {
+    let tenors = [];
+    for (let i = 0; i < queryobj.tenors; i++) {
+      tenors.push(stage+1+i);
+    }
+    rowArray.forEach(r => {
+      r.bells.push(...tenors);
+    });
+    
+  }
+  numbells = rowArray[0].bells.length;
 }
 
 //draw stuff
@@ -946,6 +1201,277 @@ function drawdescript(group, x) {
       drawElement("text", [group, tx, y, text]);
     }
   });
+}
+
+//drawing staff things
+
+function drawstaff(title) {
+  $("#container").append("<h1>"+title+"</h1>");
+  let width = Math.floor(window.visualViewport.width/100)*100;
+  //console.log("width", width);
+  let numbars;
+  let numsystems;
+  let lastsystem;
+  let blue;
+  if (queryobj.blueBell === "auto") {
+    let b = chooseworking(1);
+    blue = b[0];
+    blueBell = blue;
+  } else {
+    blue = Number(queryobj.blueBell) > 0 ? Number(queryobj.blueBell) : null;
+  }
+  
+  //don't include rowzero in these calculations
+  if (queryobj.mobile) {
+    numbars = 1;
+    numsystems = rowArray.length-1;
+    lastsystem = 1;
+  } else {
+    numbars = Math.floor(width/((numbells+2)*30));
+    numsystems = Math.ceil((rowArray.length-1)/numbars);
+    lastsystem = (rowArray.length-1)%numbars === 0 ? numbars : (rowArray.length-1)%numbars;
+  }
+
+  //width doesn't need to be calculated each time!
+  let w; 
+  let tenor = queryobj.keysig;
+  if (sharps.includes(tenor)) {
+    w = 65 + sharps.indexOf(tenor)*10;
+  } else if (flats.includes(tenor)) {
+    w = 68 + flats.indexOf(tenor)*10;
+  } else {
+    w = 60;
+  }
+  let firstwidth = w;
+  if (queryobj.includeTime && queryobj.timesig) {
+    firstwidth += 27;
+    if (queryobj.timesig.split("-").length > 2) {
+      firstwidth += 28;
+    }
+  }
+  firstwidth += numbells*30-8;
+  w += (numbells*30-8)*numbars + (numbars-1)*18;
+  if (queryobj.gap) {
+    firstwidth += 30;
+    w += Math.ceil(numbars/2)*30;
+  }
+  //draw starting leadhead as own system
+  drawstaffsvg([rowArray[0]], firstwidth+5, true, false, blue);
+
+  //console.log("numsystems");
+  //console.log(numsystems);
+
+  for (let i = 0; i < numsystems; i++) {
+    
+    drawstaffsvg(rowArray.slice(i*numbars+1, (i+1)*numbars+1), w+5, false, i === numsystems-1, blue);
+  }
+}
+
+function drawstaffsvg(arr, width, first, last, blue) {
+  let system = svg.svg($("#container"), null, null, width, 120, {class: "staff", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink"});
+  let clef = svg.group(system, {style: "stroke:black; stroke-width:1; fill:black;"});
+  //build clef
+  svg.circle(clef, 15, 80, 3);
+  svg.path(clef, "M12,80 a 5 5 0 0 0 11 0 l -5 -50", {fill: "none"});
+  svg.path(clef, "M 18 30 c -1 -8, -1 -12, 5 -18 l 2 4 c -5 6, -7 6, -7 14 m 7 -14 c 1 2.5, 5 20, -5 26 c -14 9, -12 26, 1 28 c -19 0, -16 -27, -2 -33 c 11 -9, 5 -18.5, 6 -21 m -4 53 a 8 8 0 1 0 -5 -4 a 10 10 0 1 1 5 4");
+  //build staff lines
+  let staff = svg.group(system, {style: "stroke:black; stroke-width:1; fill:none;"});
+  for (let i = 0; i < 5; i++) {
+    let y = i*10+30;
+    svg.line(staff, 2, y, width-5, y);
+  }
+  let startx = drawkey(queryobj.keysig, system);
+  if (first && queryobj.includeTime && queryobj.timesig) {
+    startx = drawtime(queryobj.timesig, system, startx);
+  }
+  let barends = drawnotes(arr, system, startx, blue);
+  //draw barlines
+  for (let i = 0; i < barends.length; i++) {
+    if (last && i === barends.length-1) {
+      svg.path(clef, "M "+(barends[i]+1)+" 29.5 v 41", {"stroke-width": 3});
+      svg.path(clef, "M "+(barends[i]-3)+" 30 v 40");
+    } else {
+      svg.path(clef, "M "+barends[i]+" 30 v 40");
+    }
+  }
+  //draw bar number
+  svg.text(system, 2, 10, arr[0].rowNum.toString(), {style: "font-family:Verdana; font-size:10px;"});
+}
+
+function drawkey(tenor, system) {
+  let type;
+  let g = svg.group(system, {style: "stroke:black; stroke-width:1; fill:black;"});
+  let startx;
+
+  if (sharps.indexOf(tenor) > -1) {
+    type = 's';
+  } else if (flats.indexOf(tenor) > -1) {
+    type = 'f';
+  } else if (tenor === "C") {
+    startx = 60;
+  }
+
+  if (type === 's') {
+    startx = 65 + sharps.indexOf(tenor)*10;
+    for (let i = 0; i < sharps.indexOf(tenor)+1; i++) {
+      let path = ["M", 40+i*10, sharpy[i], "v 24 m 4 -25 v 24 m -6 -14 l 8 -3 v -2 l -8 3 m 0 12 l 8 -3 v -2 l -8 3"];
+      svg.path(g, path.join(" "));
+    }
+  } else if (type === "f") {
+    startx = 68 + flats.indexOf(tenor)*10;
+    for (let i = 0; i < flats.indexOf(tenor)+1; i++) {
+      let y = i*2.5 + 32.5 + (i%2)*-17.5;
+      let path = ["M", 40+i*10, y, "v 23.5 m 0 -10 c 6 -4 10 0 5 6 l -5 4 c 6 -4 6 -13 0 -10"];
+      svg.path(g, path.join(" "));
+    }
+  }
+  return startx;
+}
+
+function drawtime(timesig, system, startx) {
+  let nums = timesig.split("-");
+  let plus = ['5','8','9'];
+  let g = svg.group(system, {style: "font-family:Helsinki; fill:black; font-size:35px; text-anchor:middle;"});
+
+  for (let i = 0; i < nums.length; i++) {
+    let x = i < 2 ? startx-1 : startx+29;
+    if (plus.indexOf(nums[i]) > -1) x++;
+    let y = 40 + (i%2)*20;
+    svg.text(g, x, y, nums[i]);
+  }
+  
+  startx += 27;
+  if (nums.length > 2) {
+    startx += 28;
+  }
+  return startx;
+}
+
+function quarterrest(parent, x) {
+  svg.path(parent, "M "+x+" 35 l 6 8 c -4 7 -4 7 2 15 l -10 -11 c 6 -7 5 -7 2 -12 m 8 23 a 4.0311 5 -55 0 0 -4 7 a 4.032 5 -52 0 1 0 -11");
+}
+
+function quarternote(parents, cx, cy) {
+  svg.ellipse(parents.noteheads, cx, cy, 6, 4, {transform: "rotate(-35 "+cx+" "+cy+")"});
+  //stem
+  let stemx, stemdir;
+  if (cy <= 50) {
+    stemx = cx-5;
+    stemdir = 'v 35';
+  } else {
+    stemx = cx+5;
+    stemdir = 'v -35';
+  }
+  if (cy == 10 || cy >= 90) {
+    stemdir = 'V 50';
+  }
+  svg.path(parents.stems, ["M", stemx, cy, stemdir].join(" "));
+  //ledger lines
+  if (cy >= 80) {
+    for (let k = 80; k <= cy; k += 10) {
+      svg.path(parents.ledgers, ["M", cx-11, k, "h 22"].join(" "));
+    }
+  } else if (cy <= 80) {
+    for (let k = 20; k >= cy; k -= 10) {
+      svg.path(parents.ledgers, ["M", cx-11, k, "h 22"].join(" "));
+    }
+  }
+}
+
+
+function drawnotes(rows, system, startx, blue) {
+  let actTenor = queryobj.actTenor;
+  //set y coord of tenor
+  let tenY = 90 - (actTenor.charCodeAt(0)-65)*5;
+  if (["A", "B"].includes(actTenor[0]) && numbells < 9) {
+    if (!actTenor.includes("P") || numbells < 7) {
+      //move it an octave up to avoid ledger lines
+      tenY -= 35;
+    }
+  }
+  let y;
+  let barends = [];
+
+  if (actTenor.indexOf('P') > -1) {
+    let ys = dyPenta.slice(0, numbells).map(x => tenY-x).reverse();
+    y = function (bell) {
+      return ys[bell-1];
+    };
+  } else {
+    let b = tenY - numbells*5;
+    y = function (bell) {
+      return 5*bell + b;
+    };
+  }
+
+  let noteheads = svg.group(system, {style: "stroke:black; stroke-width:1; fill:black;"});
+  let stems = svg.group(system, {style: "stroke:black; stroke-width:1.5; fill:none;"});
+  let ledgers = svg.group(system, {style: "stroke:black; stroke-width:1.2; fill:none;"});
+  let barend;
+  let groups = {
+    noteheads: noteheads,
+    stems: stems,
+    ledgers: ledgers
+  };
+  let bgroups = {
+    noteheads: 1,
+    stems: 1.5,
+    ledgers: 1.2
+  };
+  for (let key in bgroups) {
+    let fill = key === "noteheads" ? "blue;" : "none;";
+    bgroups[key] = svg.group(system, {style: "stroke:blue; stroke-width:"+bgroups[key]+"; fill:"+fill});
+  }
+
+  for (let i = 0; i < rows.length; i++) {
+    /*
+    if (blue && queryobj.onlyblue) {
+      //combine rests
+      let j = rows[i].bells.indexOf(blue);
+      let cx = startx + j*30;
+      let cy = y(blue);
+      quarternote(groups, cx, cy);
+      let x = startx;
+      let before = j;
+      while (before >= 4) {
+        //starting y is probably wrong...
+        svg.path(groups.noteheads, "M "+x+" 55 h 12 v 4 h -12 v -4");
+        x += 30*3;
+        before -= 4;
+      }
+    } else {
+    */
+      for (let j = 0; j < numbells; j++) {
+        let current = rows[i].bells[j];
+        //if the current bell is highlighted, make it blue
+        //if only the current bell is being shown, just make it black
+        let gg = current === blue && !queryobj.onlyblue ? bgroups : groups;
+        let drawnote = (blue && queryobj.onlyblue) ? current === blue : true;
+        
+        if (drawnote) {
+          let cx = startx + j*30;
+          let cy = y(current);
+          quarternote(gg, cx, cy);
+          
+        } else {
+          let x = startx + j*30 - 4;
+          quarterrest(noteheads, x);
+        }
+        
+      }
+    //}
+    if (queryobj.gap && rows[i].rowNum%2 === 0) {
+      let x = startx + numbells*30 -4;
+      quarterrest(noteheads, x);
+      barend = startx+numbells*30+22;
+    } else {
+      barend = startx+numbells*30-8;
+    }
+    barends.push(barend);
+    startx = barend+18;
+  }
+  return barends;
+
 }
 
 
