@@ -1347,6 +1347,37 @@ function drawtime(timesig, system, startx) {
   return startx;
 }
 
+function quarterrest(parent, x) {
+  svg.path(parent, "M "+x+" 35 l 6 8 c -4 7 -4 7 2 15 l -10 -11 c 6 -7 5 -7 2 -12 m 8 23 a 4.0311 5 -55 0 0 -4 7 a 4.032 5 -52 0 1 0 -11");
+}
+
+function quarternote(parents, cx, cy) {
+  svg.ellipse(parents.noteheads, cx, cy, 6, 4, {transform: "rotate(-35 "+cx+" "+cy+")"});
+  //stem
+  let stemx, stemdir;
+  if (cy <= 50) {
+    stemx = cx-5;
+    stemdir = 'v 35';
+  } else {
+    stemx = cx+5;
+    stemdir = 'v -35';
+  }
+  if (cy == 10 || cy >= 90) {
+    stemdir = 'V 50';
+  }
+  svg.path(parents.stems, ["M", stemx, cy, stemdir].join(" "));
+  //ledger lines
+  if (cy >= 80) {
+    for (let k = 80; k <= cy; k += 10) {
+      svg.path(parents.ledgers, ["M", cx-11, k, "h 22"].join(" "));
+    }
+  } else if (cy <= 80) {
+    for (let k = 20; k >= cy; k -= 10) {
+      svg.path(parents.ledgers, ["M", cx-11, k, "h 22"].join(" "));
+    }
+  }
+}
+
 
 function drawnotes(rows, system, startx, blue) {
   let actTenor = queryobj.actTenor;
@@ -1393,49 +1424,45 @@ function drawnotes(rows, system, startx, blue) {
   }
 
   for (let i = 0; i < rows.length; i++) {
-    for (let j = 0; j < numbells; j++) {
-      let current = rows[i].bells[j];
-      //if the current bell is highlighted, make it blue
-      //if only the current bell is being shown, just make it black
-      let gg = current === blue && !queryobj.onlyblue ? bgroups : groups;
-      let drawnote = (blue && queryobj.onlyblue) ? current === blue : true;
-      
-      if (drawnote) {
-        let cx = startx + j*30;
-        let cy = y(current);
-        svg.ellipse(gg.noteheads, cx, cy, 6, 4, {transform: "rotate(-35 "+cx+" "+cy+")"});
-
-        let stemx, stemdir;
-        if (cy <= 50) {
-          stemx = cx-5;
-          stemdir = 'v 35';
-        } else {
-          stemx = cx+5;
-          stemdir = 'v -35';
-        }
-        if (cy == 10 || cy >= 90) {
-          stemdir = 'V 50';
-        }
-        svg.path(gg.stems, ["M", stemx, cy, stemdir].join(" "));
-
-        if (cy >= 80) {
-          for (let k = 80; k <= cy; k += 10) {
-            svg.path(gg.ledgers, ["M", cx-11, k, "h 22"].join(" "));
-          }
-        } else if (cy <= 80) {
-          for (let k = 20; k >= cy; k -= 10) {
-            svg.path(gg.ledgers, ["M", cx-11, k, "h 22"].join(" "));
-          }
-        }
-      } else {
-        let x = startx + j*30 - 4;
-        svg.path(noteheads, "M "+x+" 35 l 6 8 c -4 7 -4 7 2 15 l -10 -11 c 6 -7 5 -7 2 -12 m 8 23 a 4.0311 5 -55 0 0 -4 7 a 4.032 5 -52 0 1 0 -11");
+    /*
+    if (blue && queryobj.onlyblue) {
+      //combine rests
+      let j = rows[i].bells.indexOf(blue);
+      let cx = startx + j*30;
+      let cy = y(blue);
+      quarternote(groups, cx, cy);
+      let x = startx;
+      let before = j;
+      while (before >= 4) {
+        //starting y is probably wrong...
+        svg.path(groups.noteheads, "M "+x+" 55 h 12 v 4 h -12 v -4");
+        x += 30*3;
+        before -= 4;
       }
-      
-    }
+    } else {
+    */
+      for (let j = 0; j < numbells; j++) {
+        let current = rows[i].bells[j];
+        //if the current bell is highlighted, make it blue
+        //if only the current bell is being shown, just make it black
+        let gg = current === blue && !queryobj.onlyblue ? bgroups : groups;
+        let drawnote = (blue && queryobj.onlyblue) ? current === blue : true;
+        
+        if (drawnote) {
+          let cx = startx + j*30;
+          let cy = y(current);
+          quarternote(gg, cx, cy);
+          
+        } else {
+          let x = startx + j*30 - 4;
+          quarterrest(noteheads, x);
+        }
+        
+      }
+    //}
     if (queryobj.gap && rows[i].rowNum%2 === 0) {
       let x = startx + numbells*30 -4;
-      svg.path(noteheads, "M "+x+" 35 l 6 8 c -4 7 -4 7 2 15 l -10 -11 c 6 -7 5 -7 2 -12 m 8 23 a 4.0311 5 -55 0 0 -4 7 a 4.032 5 -52 0 1 0 -11");
+      quarterrest(noteheads, x);
       barend = startx+numbells*30+22;
     } else {
       barend = startx+numbells*30-8;
