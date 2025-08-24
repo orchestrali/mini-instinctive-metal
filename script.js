@@ -1281,12 +1281,19 @@ function drawstaff(title) {
   } else {
     firstwidth += numbells*30 + 10;
   }
+  let lastwidth = w + (numbells*30-8)*lastsystem + (lastsystem-1)*18;
   w += (numbells*30-8)*numbars + (numbars-1)*18;
   let w2 = w;
   if (queryobj.gap) {
     firstwidth += 30;
     w += Math.floor(numbars/2)*30;
     w2 += Math.ceil(numbars/2)*30;
+    if (lastsystem%2 === 0) {
+      lastwidth += lastsystem/2 * 30;
+    } else {
+      let last = rowArray.slice(-lastsystem).map(o => o.rowNum).filter(n => n%2 === 0);
+      lastwidth += last.length * 30;
+    }
   }
   //draw starting leadhead as own system - hand and back, or just back if hand has already been drawn
   drawstaffsvg(start, firstwidth+5, first, false, blue);
@@ -1295,7 +1302,7 @@ function drawstaff(title) {
   //console.log(numsystems);
   //if numbars is odd and there's a handstroke gap, width alternates
   for (let i = 0; i < numsystems; i++) {
-    let sw = i%2 === 0 ? w : w2;
+    let sw = i === numsystems-1 ? lastwidth : i%2 === 0 ? w : w2;
     drawstaffsvg(rowArray.slice(i*numbars+1, (i+1)*numbars+1), sw+5, false, i === numsystems-1, blue);
   }
 }
@@ -1412,7 +1419,7 @@ function quarternote(parents, cx, cy) {
   }
 }
 
-
+//returns array of x-coordinates for barlines
 function drawnotes(rows, system, startx, blue) {
   let actTenor = queryobj.actTenor;
   //set y coord of tenor
