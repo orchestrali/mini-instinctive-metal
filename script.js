@@ -19,6 +19,24 @@ var type = "grid";
 //now gridline, gridgrid
 let gridtype = "gridline";
 
+//empty/default form values
+var formstart = {
+  type: "grid",
+  lookup: "name",
+  gridtype: "gridline",
+  numbers: "show",
+  gridcolors: "colors",
+  gap: "yes",
+  includeTime: "yes",
+  keysig: "C"
+};
+//form inputs
+const selects = ["stage", "methodClass", "blueBell", "keysig", "actTenor"];
+const texts = ["methodName", "placeNotation"];
+const numtexts = ["complibid", "tenors"];
+const radios = ["lookup", "type", "gridtype", "gridcolors"];
+const checked = ["numbers", "describe", "gap", "includeTime", "onlyblue", "mobile"];
+
 //strategies for choosing method/comp
 //default "name", others "pn" and "complib"
 var lookup = "name";
@@ -101,6 +119,28 @@ function getlists() {
       });
       
     });
+  });
+}
+
+function resetform() {
+  //selects
+  $("#stage option:first-child").prop("selected", true);
+  $("#keysig").val("C");
+  $('#methodClass,#actTenor,select[name="blueBell"]').children().remove();
+  //texts
+  $('#methodName,#placeNotation,#complibid').val("");
+  $('input[name="tenors"]').val("0");
+  //radio
+  radios.forEach(w => {
+    if (formstart[w]) {
+      $('input[name="'+w+'"]').val(formstart[w]);
+    }
+  });
+  //checkboxes
+  checked.forEach(w => {
+    if (formstart[w]) {
+      $(`input[name="${w}"]`).prop("checked", true);
+    }
   });
 }
 
