@@ -1407,6 +1407,8 @@ function drawnotes(rows, system, startx, blue) {
   let noteheads = svg.group(system, {style: "stroke:black; stroke-width:1; fill:black;"});
   let stems = svg.group(system, {style: "stroke:black; stroke-width:1.5; fill:none;"});
   let ledgers = svg.group(system, {style: "stroke:black; stroke-width:1.2; fill:none;"});
+  //group to hold grey rests in case of onlyblue
+  let fade = svg.group(system, {style: "stroke:grey; stroke-width:1; fill:grey;"});
   let barend;
   let groups = {
     noteheads: noteheads,
@@ -1455,7 +1457,9 @@ function drawnotes(rows, system, startx, blue) {
           
         } else {
           let x = startx + j*30 - 4;
-          quarterrest(noteheads, x);
+          //wait this should only ever be fade
+          let p = (blue && queryobj.onlyblue) ? fade : noteheads; 
+          quarterrest(p, x);
         }
         
       }
