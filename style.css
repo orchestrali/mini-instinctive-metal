@@ -1,6 +1,7 @@
 @font-face {
   font-family: "Helsinki";
-  src: url("https://github.com/orchestrali/mini-instinctive-metal/raw/refs/heads/staff/helsinki-webfont.ttf");
+  src: url("https://github.com/orchestrali/mini-instinctive-metal/raw/refs/heads/main/helsinki-webfont.ttf"),
+    url("https://github.com/orchestrali/mini-instinctive-metal/raw/refs/heads/main/helsinki-webfont.woff");
   font-weight: normal;
   font-style: normal;
 }
