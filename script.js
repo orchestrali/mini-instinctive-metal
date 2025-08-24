@@ -139,7 +139,8 @@ function stagechange() {
   if ($("#methodName").prop("placeholder") == "" && $("select#methodClass option:checked").text() == "") {
     $("#methodName").prop("placeholder", "Select a stage and class to search methods");
   }
-  
+
+  //handbellpair
   //remove blueBell options and add a blank selected option
   $('select.blueBell').children().detach();
   $('<option></option>').appendTo('select#sblueBell');
@@ -148,6 +149,8 @@ function stagechange() {
   blueBell = null;
 
   blueBellOpts(stage);
+  //add handbell pairs to staff bluebell options
+  //will be done in the staff tenors function
 
   //tenors behind
   $('input[name="tenors"]').attr("max", 16-stage);
@@ -183,6 +186,8 @@ function stafftenors() {
   let keysig = $("select#keysig option:checked").val();
   adjustTime();
   tenOpts(keysig, numbells);
+  $('option.bluepair').remove();
+  blueBellPairs(stage, numbells);
 }
 
 //switch between method name, pn, or complib
@@ -654,6 +659,14 @@ function blueBellOpts(stage) {
   }
 }
 
+function blueBellPairs(stage, numbells) {
+  let max = stage%2 === 0 ? stage : numbells > stage ? stage+1 : stage-1;
+  for (let i = 1; i < max; i+=2) {
+    let val = [i,i+1].join("-");
+    $('<option class="bluepair"></option>').text(val).val(val).appendTo('select#sblueBell');
+  }
+}
+
 // staff form options
 
 
@@ -840,7 +853,10 @@ function submitform() {
         if (key[1] === "colors") queryobj.gridcolors = true;
         break;
       default:
-        queryobj[key[0]] = key[1];
+        if (key[1].length) {
+          queryobj[key[0]] = key[1];
+        }
+        
     }
     
   }
@@ -1212,13 +1228,14 @@ function drawstaff(title) {
   let numbars;
   let numsystems;
   let lastsystem;
+  //handbellpair
   let blue;
   if (queryobj.blueBell === "auto") {
-    let b = chooseworking(1);
-    blue = b[0];
+    blue = chooseworking(1);
+    //blue = b[0];
     blueBell = blue;
-  } else {
-    blue = Number(queryobj.blueBell) > 0 ? Number(queryobj.blueBell) : null;
+  } else if (queryobj.blueBell) {
+    blue = queryobj.blueBell.split("-").map(s => Number(s));
   }
   
   //don't include rowzero in these calculations
@@ -1227,12 +1244,14 @@ function drawstaff(title) {
     numsystems = rowArray.length-1;
     lastsystem = 1;
   } else {
-    numbars = Math.floor(width/((numbells+2)*30));
+    numbars = Math.max(Math.floor(width/((numbells+2)*30)),1); //prevent numbars from being zero
     numsystems = Math.ceil((rowArray.length-1)/numbars);
     lastsystem = (rowArray.length-1)%numbars === 0 ? numbars : (rowArray.length-1)%numbars;
   }
 
+  let start = [{rowNum: -1, bells: rowArray[0].bells},{rowNum: 0, bells: rowArray[0].bells}];
   //width doesn't need to be calculated each time!
+  //but it is actually the width of the staff lines
   let w; 
   let tenor = queryobj.keysig;
   if (sharps.includes(tenor)) {
@@ -1243,29 +1262,51 @@ function drawstaff(title) {
     w = 60;
   }
   let firstwidth = w;
+  let timewidth = 0;
   if (queryobj.includeTime && queryobj.timesig) {
-    firstwidth += 27;
+    timewidth += 27;
     if (queryobj.timesig.split("-").length > 2) {
-      firstwidth += 28;
+      timewidth += 28;
     }
   }
+  firstwidth += timewidth;
   firstwidth += numbells*30-8;
+  let first = true;
+  if (queryobj.mobile || numbars === 1) {
+    //starting leadhead handstroke
+    drawstaffsvg([start[0]], firstwidth+5, true, false, blue);
+    firstwidth -= timewidth;
+    first = false;
+    start.shift();
+  } else {
+    firstwidth += numbells*30 + 10;
+  }
+  let lastwidth = w + (numbells*30-8)*lastsystem + (lastsystem-1)*18;
   w += (numbells*30-8)*numbars + (numbars-1)*18;
+  let w2 = w;
   if (queryobj.gap) {
     firstwidth += 30;
-    w += Math.ceil(numbars/2)*30;
+    w += Math.floor(numbars/2)*30;
+    w2 += Math.ceil(numbars/2)*30;
+    if (lastsystem%2 === 0) {
+      lastwidth += lastsystem/2 * 30;
+    } else {
+      let last = rowArray.slice(-lastsystem).map(o => o.rowNum).filter(n => n%2 === 0);
+      lastwidth += last.length * 30;
+    }
   }
-  //draw starting leadhead as own system
-  drawstaffsvg([rowArray[0]], firstwidth+5, true, false, blue);
+  //draw starting leadhead as own system - hand and back, or just back if hand has already been drawn
+  drawstaffsvg(start, firstwidth+5, first, false, blue);
 
   //console.log("numsystems");
   //console.log(numsystems);
-
+  //if numbars is odd and there's a handstroke gap, width alternates
   for (let i = 0; i < numsystems; i++) {
-    
-    drawstaffsvg(rowArray.slice(i*numbars+1, (i+1)*numbars+1), w+5, false, i === numsystems-1, blue);
+    let sw = i === numsystems-1 ? lastwidth : i%2 === 0 ? w : w2;
+    drawstaffsvg(rowArray.slice(i*numbars+1, (i+1)*numbars+1), sw+5, false, i === numsystems-1, blue);
   }
 }
+
 
 function drawstaffsvg(arr, width, first, last, blue) {
   let system = svg.svg($("#container"), null, null, width, 120, {class: "staff", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink"});
@@ -1378,7 +1419,7 @@ function quarternote(parents, cx, cy) {
   }
 }
 
-
+//returns array of x-coordinates for barlines
 function drawnotes(rows, system, startx, blue) {
   let actTenor = queryobj.actTenor;
   //set y coord of tenor
@@ -1407,20 +1448,27 @@ function drawnotes(rows, system, startx, blue) {
   let noteheads = svg.group(system, {style: "stroke:black; stroke-width:1; fill:black;"});
   let stems = svg.group(system, {style: "stroke:black; stroke-width:1.5; fill:none;"});
   let ledgers = svg.group(system, {style: "stroke:black; stroke-width:1.2; fill:none;"});
+  //group to hold grey rests in case of onlyblue
+  let fade = svg.group(system, {style: "stroke:grey; stroke-width:1; fill:grey;"});
   let barend;
   let groups = {
     noteheads: noteheads,
     stems: stems,
     ledgers: ledgers
   };
-  let bgroups = {
+  let keys = {
     noteheads: 1,
     stems: 1.5,
     ledgers: 1.2
   };
-  for (let key in bgroups) {
+  let bgroups = {};
+  let ggroups = {};
+  //handbellpair
+  for (let key in keys) {
     let fill = key === "noteheads" ? "blue;" : "none;";
-    bgroups[key] = svg.group(system, {style: "stroke:blue; stroke-width:"+bgroups[key]+"; fill:"+fill});
+    let gfill = fill === "blue;" ? "green;" : "none;";
+    bgroups[key] = svg.group(system, {style: "stroke:blue; stroke-width:"+keys[key]+"; fill:"+fill});
+    ggroups[key] = svg.group(system, {style: "stroke:green; stroke-width:"+keys[key]+"; fill:"+gfill});
   }
 
   for (let i = 0; i < rows.length; i++) {
@@ -1445,8 +1493,13 @@ function drawnotes(rows, system, startx, blue) {
         let current = rows[i].bells[j];
         //if the current bell is highlighted, make it blue
         //if only the current bell is being shown, just make it black
-        let gg = current === blue && !queryobj.onlyblue ? bgroups : groups;
-        let drawnote = (blue && queryobj.onlyblue) ? current === blue : true;
+        let gg;
+        if (blue && blue.length === 2) {
+          gg = current === blue[0] ? bgroups : current === blue[1] ? ggroups : groups;
+        } else {
+          gg = (blue && blue.includes(current) && !queryobj.onlyblue) ? bgroups : groups;
+        }
+        let drawnote = (blue && queryobj.onlyblue) ? blue.includes(current) : true;
         
         if (drawnote) {
           let cx = startx + j*30;
@@ -1455,7 +1508,9 @@ function drawnotes(rows, system, startx, blue) {
           
         } else {
           let x = startx + j*30 - 4;
-          quarterrest(noteheads, x);
+          //wait this should only ever be fade
+          let p = (blue && queryobj.onlyblue) ? fade : noteheads; 
+          quarterrest(p, x);
         }
         
       }
