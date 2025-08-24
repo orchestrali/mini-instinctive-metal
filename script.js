@@ -1251,6 +1251,7 @@ function drawstaff(title) {
   }
 
   //width doesn't need to be calculated each time!
+  //but it is actually the width of the staff lines
   let w; 
   let tenor = queryobj.keysig;
   if (sharps.includes(tenor)) {
@@ -1269,21 +1270,24 @@ function drawstaff(title) {
   }
   firstwidth += numbells*30-8;
   w += (numbells*30-8)*numbars + (numbars-1)*18;
+  let w2 = w;
   if (queryobj.gap) {
     firstwidth += 30;
-    w += Math.ceil(numbars/2)*30;
+    w += Math.floor(numbars/2)*30;
+    w2 += Math.ceil(numbars/2)*30;
   }
   //draw starting leadhead as own system
   drawstaffsvg([rowArray[0]], firstwidth+5, true, false, blue);
 
   //console.log("numsystems");
   //console.log(numsystems);
-
+  //if numbars is odd and there's a handstroke gap, width alternates
   for (let i = 0; i < numsystems; i++) {
-    
-    drawstaffsvg(rowArray.slice(i*numbars+1, (i+1)*numbars+1), w+5, false, i === numsystems-1, blue);
+    let sw = i%2 === 0 ? w : w2;
+    drawstaffsvg(rowArray.slice(i*numbars+1, (i+1)*numbars+1), sw+5, false, i === numsystems-1, blue);
   }
 }
+
 
 function drawstaffsvg(arr, width, first, last, blue) {
   let system = svg.svg($("#container"), null, null, width, 120, {class: "staff", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink"});
