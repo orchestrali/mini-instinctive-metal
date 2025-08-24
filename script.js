@@ -1236,7 +1236,6 @@ function drawstaff(title) {
     blueBell = blue;
   } else if (queryobj.blueBell) {
     blue = queryobj.blueBell.split("-").map(s => Number(s));
-      //= Number(queryobj.blueBell) > 0 ? Number(queryobj.blueBell) : null;
   }
   
   //don't include rowzero in these calculations
@@ -1245,11 +1244,12 @@ function drawstaff(title) {
     numsystems = rowArray.length-1;
     lastsystem = 1;
   } else {
-    numbars = Math.floor(width/((numbells+2)*30));
+    numbars = Math.max(Math.floor(width/((numbells+2)*30)),1); //prevent numbars from being zero
     numsystems = Math.ceil((rowArray.length-1)/numbars);
     lastsystem = (rowArray.length-1)%numbars === 0 ? numbars : (rowArray.length-1)%numbars;
   }
 
+  let start = [{rowNum: -1, bells: rowArray[0].bells},{rowNum: 0, bells: rowArray[0].bells}];
   //width doesn't need to be calculated each time!
   //but it is actually the width of the staff lines
   let w; 
@@ -1262,13 +1262,25 @@ function drawstaff(title) {
     w = 60;
   }
   let firstwidth = w;
+  let timewidth = 0;
   if (queryobj.includeTime && queryobj.timesig) {
-    firstwidth += 27;
+    timewidth += 27;
     if (queryobj.timesig.split("-").length > 2) {
-      firstwidth += 28;
+      timewidth += 28;
     }
   }
+  firstwidth += timewidth;
   firstwidth += numbells*30-8;
+  let first = true;
+  if (queryobj.mobile || numbars === 1) {
+    //starting leadhead handstroke
+    drawstaffsvg([start[0]], firstwidth+5, true, false, blue);
+    firstwidth -= timewidth;
+    first = false;
+    start.shift();
+  } else {
+    firstwidth += numbells*30 + 10;
+  }
   w += (numbells*30-8)*numbars + (numbars-1)*18;
   let w2 = w;
   if (queryobj.gap) {
@@ -1276,8 +1288,8 @@ function drawstaff(title) {
     w += Math.floor(numbars/2)*30;
     w2 += Math.ceil(numbars/2)*30;
   }
-  //draw starting leadhead as own system
-  drawstaffsvg([rowArray[0]], firstwidth+5, true, false, blue);
+  //draw starting leadhead as own system - hand and back, or just back if hand has already been drawn
+  drawstaffsvg(start, firstwidth+5, first, false, blue);
 
   //console.log("numsystems");
   //console.log(numsystems);
