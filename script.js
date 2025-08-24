@@ -139,7 +139,8 @@ function stagechange() {
   if ($("#methodName").prop("placeholder") == "" && $("select#methodClass option:checked").text() == "") {
     $("#methodName").prop("placeholder", "Select a stage and class to search methods");
   }
-  
+
+  //handbellpair
   //remove blueBell options and add a blank selected option
   $('select.blueBell').children().detach();
   $('<option></option>').appendTo('select#sblueBell');
@@ -148,6 +149,8 @@ function stagechange() {
   blueBell = null;
 
   blueBellOpts(stage);
+  //add handbell pairs to staff bluebell options
+  //will be done in the staff tenors function
 
   //tenors behind
   $('input[name="tenors"]').attr("max", 16-stage);
@@ -183,6 +186,8 @@ function stafftenors() {
   let keysig = $("select#keysig option:checked").val();
   adjustTime();
   tenOpts(keysig, numbells);
+  $('option.bluepair').remove();
+  blueBellPairs(stage, numbells);
 }
 
 //switch between method name, pn, or complib
@@ -654,6 +659,14 @@ function blueBellOpts(stage) {
   }
 }
 
+function blueBellPairs(stage, numbells) {
+  let max = stage%2 === 0 ? stage : numbells > stage ? stage+1 : stage-1;
+  for (let i = 1; i < max; i+=2) {
+    let val = [i,i+1].join("-");
+    $('<option class="bluepair"></option>').text(val).val(val).appendTo('select#sblueBell');
+  }
+}
+
 // staff form options
 
 
@@ -840,7 +853,10 @@ function submitform() {
         if (key[1] === "colors") queryobj.gridcolors = true;
         break;
       default:
-        queryobj[key[0]] = key[1];
+        if (key[1].length) {
+          queryobj[key[0]] = key[1];
+        }
+        
     }
     
   }
@@ -1212,13 +1228,15 @@ function drawstaff(title) {
   let numbars;
   let numsystems;
   let lastsystem;
+  //handbellpair
   let blue;
   if (queryobj.blueBell === "auto") {
-    let b = chooseworking(1);
-    blue = b[0];
+    blue = chooseworking(1);
+    //blue = b[0];
     blueBell = blue;
-  } else {
-    blue = Number(queryobj.blueBell) > 0 ? Number(queryobj.blueBell) : null;
+  } else if (queryobj.blueBell) {
+    blue = queryobj.blueBell.split("-").map(s => Number(s));
+      //= Number(queryobj.blueBell) > 0 ? Number(queryobj.blueBell) : null;
   }
   
   //don't include rowzero in these calculations
@@ -1415,14 +1433,19 @@ function drawnotes(rows, system, startx, blue) {
     stems: stems,
     ledgers: ledgers
   };
-  let bgroups = {
+  let keys = {
     noteheads: 1,
     stems: 1.5,
     ledgers: 1.2
   };
-  for (let key in bgroups) {
+  let bgroups = {};
+  let ggroups = {};
+  //handbellpair
+  for (let key in keys) {
     let fill = key === "noteheads" ? "blue;" : "none;";
-    bgroups[key] = svg.group(system, {style: "stroke:blue; stroke-width:"+bgroups[key]+"; fill:"+fill});
+    let gfill = fill === "blue;" ? "green;" : "none;";
+    bgroups[key] = svg.group(system, {style: "stroke:blue; stroke-width:"+keys[key]+"; fill:"+fill});
+    ggroups[key] = svg.group(system, {style: "stroke:green; stroke-width:"+keys[key]+"; fill:"+gfill});
   }
 
   for (let i = 0; i < rows.length; i++) {
@@ -1447,8 +1470,13 @@ function drawnotes(rows, system, startx, blue) {
         let current = rows[i].bells[j];
         //if the current bell is highlighted, make it blue
         //if only the current bell is being shown, just make it black
-        let gg = current === blue && !queryobj.onlyblue ? bgroups : groups;
-        let drawnote = (blue && queryobj.onlyblue) ? current === blue : true;
+        let gg;
+        if (blue && blue.length === 2) {
+          gg = current === blue[0] ? bgroups : current === blue[1] ? ggroups : groups;
+        } else {
+          gg = (blue && blue.includes(current) && !queryobj.onlyblue) ? bgroups : groups;
+        }
+        let drawnote = (blue && queryobj.onlyblue) ? blue.includes(current) : true;
         
         if (drawnote) {
           let cx = startx + j*30;
