@@ -33,7 +33,7 @@ var formstart = {
 //form inputs
 const selects = ["stage", "methodClass", "blueBell", "keysig", "actTenor"];
 const texts = ["methodName", "placeNotation"];
-const numtexts = ["complibid", "tenors"];
+const numtexts = ["tenors"];
 const radios = ["lookup", "type", "gridtype", "gridcolors"];
 const checked = ["numbers", "describe", "gap", "includeTime", "onlyblue", "mobile"];
 const formkeys = {
@@ -42,6 +42,13 @@ const formkeys = {
   numbers: numtexts,
   radios: radios,
   checks: checked
+};
+const oldformkeys = {
+  selects: ["huntBellw", "blueBellw", "blueGroup1", "blueGroup1w", "blueGroup2w", "blueGroup2", "bell1w"],
+  texts: ["bobPlaceNot", "singlePlaceNot", "otherLeadhead", "comp", "huntColor", "blueBellc", "blueGroup1c", "blueGroup2c", "bell1c"],
+  numbers: ["complibid", "callLoc", "numrounds", "hours", "minutes"],
+  radios: ["callType", "leadhead", "quantity", "touchType", "sounds"],
+  checks: ["pn", "pagination", "huntbells", "rowzero", "keepscore", "drawLH", "tutorial", "player", "highlight"]
 };
 
 //strategies for choosing method/comp
@@ -134,16 +141,36 @@ function getqueryparams() {
   let q = new window.URLSearchParams(window.location.search);
   let obj = {};
   let params = 0;
+  let oldparams;
   //p[0] key, p[1] value
   for (let p of q) {
     //check if the key is one of the known formkeys
     let key = Object.keys(formkeys).find(k => formkeys[k].includes(p[0]));
-    if (key) { // && p[1] has length?
+    if (key && p[1].length) { 
       params++;
       obj[p[0]] = p[1];
+    } else {
+      let oldkey = Object.keys(oldformkeys).find(k => oldformkeys[k].includes(p[0]);
+      let line = p[0].startsWith("bell") && ["w", "c"].includes(p[0].slice(-1)) && Number(p[0].slice(4,-1)) > 0;
+      if (oldkey || line) {
+        oldparams = true;
+        if (p[1].length) {
+          obj[p[0]] = p[1];
+        }
+      }
     }
   }
   console.log(obj);
+}
+
+function checkqueryparams() {
+  //currently only grid or staff type
+  //need stage
+  //need methodClass and methodName, or placeNotation
+  //no complibid yet
+  //no quantity touch yet
+  //staff options pretty much same?
+  //grid options a bit different
 }
 
 function resetform() {
