@@ -163,14 +163,35 @@ function getqueryparams() {
   console.log(obj);
 }
 
-function checkqueryparams() {
+function checkqueryparams(obj) {
   //currently only grid or staff type
+  if (!obj.type || !["grid", "staff"].includes(obj.type)) {
+    //can't do this (yet)
+  } else if (!obj.stage || Number(obj.stage) < 4) {
   //need stage
+  } else if (obj.complibid) {
+    //no complibid yet
+  } else if (obj.quantity === "touch") {
+    //no quantity touch yet
+  } else {
+    $('#stage option[value="'+obj.stage+'"]').prop("selected", true);
+    stagechange();
   //need methodClass and methodName, or placeNotation
-  //no complibid yet
-  //no quantity touch yet
+    if (obj.placeNotation) {
+      $('#lookupstrat input[value="pn"]').prop("checked", true);
+      changestrategy();
+      $("#placeNotation").val(obj.placeNotation).trigger("keyup");
+      
+    } else if (obj.methodClass && obj.methodName) {
+      
+    } else {
+      //not enough info
+    }
+  
   //staff options pretty much same?
   //grid options a bit different
+  }
+  //if it's okay, fill things in and then just use the regular form submit??
 }
 
 function resetform() {
