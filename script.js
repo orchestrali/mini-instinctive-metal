@@ -36,6 +36,13 @@ const texts = ["methodName", "placeNotation"];
 const numtexts = ["complibid", "tenors"];
 const radios = ["lookup", "type", "gridtype", "gridcolors"];
 const checked = ["numbers", "describe", "gap", "includeTime", "onlyblue", "mobile"];
+const formkeys = {
+  selects: selects,
+  texts: texts,
+  numbers: numtexts,
+  radios: radios,
+  checks: checked
+};
 
 //strategies for choosing method/comp
 //default "name", others "pn" and "complib"
@@ -62,6 +69,7 @@ var blueBell;
 $(function(){
   
   getlists();
+  getqueryparams();
   $("#container").svg({onLoad: (o) => {
     svg = o;
     svg.configure({xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink", width: 0, height: 0});
@@ -120,6 +128,22 @@ function getlists() {
       
     });
   });
+}
+
+function getqueryparams() {
+  let q = new window.URLSearchParams(window.location.search);
+  let obj = {};
+  let params = 0;
+  //p[0] key, p[1] value
+  for (let p of q) {
+    //check if the key is one of the known formkeys
+    let key = Object.keys(formkeys).find(k => formkeys[k].includes(p[0]));
+    if (key) { // && p[1] has length?
+      params++;
+      obj[p[0]] = p[1];
+    }
+  }
+  console.log(obj);
 }
 
 function resetform() {
