@@ -1825,6 +1825,7 @@ function pnlexer(pn, pnstage) {
         token.type = "separator";
         break;
       case "x": case "-":
+        token.value = "x";
         token.type = "all change";
         break;
       default:
