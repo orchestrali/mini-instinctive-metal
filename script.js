@@ -190,10 +190,12 @@ function checkqueryparams(obj, oldobj) {
     //no quantity touch yet
     problem = "can't do touches yet";
   } else {
-    //$('#stage option[value="'+obj.stage+'"]').prop("selected", true);
-    //stagechange();
+    $('#stage option[value="'+obj.stage+'"]').prop("selected", true);
+    stagechange();
   //need methodClass and methodName, or placeNotation
     if (obj.placeNotation) {
+      $('#lookupstrat input[value="pn"]').prop("checked", true);
+      changestrategy();
       obj.lookup = "pn";
       
     } else if (obj.methodClass && obj.methodName) {
@@ -241,9 +243,11 @@ function checkqueryparams(obj, oldobj) {
 //only send an obj here if it has keys
 function fillform(obj) {
 
+  //need to do the text numbers too
+  
   selects.forEach(s => {
-    //dealing with stage earlier - no I'm not! s != "stage" &&
-    if (obj[s]) {
+    //dealing with stage earlier 
+    if (s != "stage" && obj[s]) {
       //assumes selects have same name and id
       //what about blueBell
       //maybe only some selects need to trigger a function?
@@ -274,6 +278,7 @@ function fillform(obj) {
       //is this really enough to get the correct thing????
       $(`input[value="${obj[r]}"]`).prop("checked", true);
       $("#"+r).change();
+      //for "lookup" the id is "lookupstrat" but currently I'm dealing with that earlier
     }
   });
 }
