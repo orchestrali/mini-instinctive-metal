@@ -242,8 +242,8 @@ function checkqueryparams(obj, oldobj) {
 function fillform(obj) {
 
   selects.forEach(s => {
-    //dealing with stage earlier
-    if (s != "stage" && obj[s]) {
+    //dealing with stage earlier - no I'm not! s != "stage" &&
+    if (obj[s]) {
       //assumes selects have same name and id
       //what about blueBell
       //maybe only some selects need to trigger a function?
