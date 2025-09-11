@@ -189,8 +189,8 @@ function checkqueryparams(obj) {
     //no quantity touch yet
     problem = "can't do touches yet";
   } else {
-    //$('#stage option[value="'+obj.stage+'"]').prop("selected", true);
-    //stagechange();
+    $('#stage option[value="'+obj.stage+'"]').prop("selected", true);
+    stagechange();
   //need methodClass and methodName, or placeNotation
     if (obj.placeNotation) {
       $('#lookupstrat input[value="pn"]').prop("checked", true);
@@ -219,7 +219,8 @@ function checkqueryparams(obj) {
 function fillform(obj) {
 
   selects.forEach(s => {
-    if (obj[s]) {
+    //dealing with stage earlier
+    if (s != "stage" && obj[s]) {
       //assumes selects have same name and id
       //what about blueBell
       //maybe only some selects need to trigger a function?
