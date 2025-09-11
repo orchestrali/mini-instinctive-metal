@@ -141,6 +141,7 @@ function getlists() {
 function getqueryparams() {
   let q = new window.URLSearchParams(window.location.search);
   let obj = {};
+  let oldobj = {};
   let params = 0;
   let oldparams;
   //p[0] key, p[1] value
@@ -156,19 +157,19 @@ function getqueryparams() {
       if (oldkey || line) {
         oldparams = true;
         if (p[1].length) {
-          obj[p[0]] = p[1];
+          oldobj[p[0]] = p[1];
         }
       }
     }
   }
   console.log(obj);
-  if (params > 0) checkqueryparams(obj);
+  if (params > 0) checkqueryparams(obj, oldobj);
 }
 
 //two issues: a search that I can't handle yet, and one with not enough info
 //not enough info needs to be handled generally
 //filling the form should be separate from submitting it
-function checkqueryparams(obj) {
+function checkqueryparams(obj, oldobj) {
   let problem;
   //currently only grid or staff type
   if (!obj.type || !["grid", "staff"].includes(obj.type)) {
@@ -189,16 +190,14 @@ function checkqueryparams(obj) {
     //no quantity touch yet
     problem = "can't do touches yet";
   } else {
-    $('#stage option[value="'+obj.stage+'"]').prop("selected", true);
-    stagechange();
+    //$('#stage option[value="'+obj.stage+'"]').prop("selected", true);
+    //stagechange();
   //need methodClass and methodName, or placeNotation
     if (obj.placeNotation) {
-      $('#lookupstrat input[value="pn"]').prop("checked", true);
-      changestrategy();
-      $("#placeNotation").val(obj.placeNotation).trigger("keyup");
+      obj.lookup = "pn";
       
     } else if (obj.methodClass && obj.methodName) {
-      
+      obj.lookup = "name";
     } else {
       //not enough info
       problem = "not enough info";
@@ -206,10 +205,34 @@ function checkqueryparams(obj) {
   
   //staff options pretty much same?
   //grid options a bit different
+    if (obj.gridtype && ["basic-lines", "everyline", "bellgroups"].includes(obj.gridtype)) {
+      //conversion needed
+      //making assumptions for everyline and bellgroups
+      //include some note about making changes??
+      if (obj.numbers || obj.describe) {
+        obj.gridtype = "basic-lines";
+        //describe would need to be that anyway, but not numbers
+      }
+      switch (obj.gridtype) {
+        case "basic-lines":
+          obj.gridtype = "gridline";
+          obj.blueBell = oldobj.blueBell ? oldobj.blueBell : "auto";
+          break;
+        case "everyline":
+          obj.gridtype = "gridgrid";
+          obj.gridcolors = "colors";
+          break;
+        case "bellgroups":
+          obj.gridtype = "gridgrid";
+          obj.gridcolors = "0";
+          break;
+      }
+    }
   }
   //if it's okay, fill things in and then just use the regular form submit??
   if (!problem) {
     fillform(obj);
+    submitform();
   } else {
     console.log(problem);
   }
@@ -233,6 +256,9 @@ function fillform(obj) {
     if (obj[t]) {
       //also assumes same name and id but that might be correct here
       $("#"+t).val(obj[t]);
+      if (t === "placeNotation") {
+        $("#placeNotation").trigger("keyup");
+      }
     }
   });
 
@@ -1015,6 +1041,7 @@ function submitform() {
   let form = document.getElementById("formform");
   let data = new FormData(form);
   queryobj = {};
+  let queryarr = [];
   
   for (let key of data.entries()) {
     switch (key[0]) {
@@ -1036,6 +1063,8 @@ function submitform() {
   if (queryobj.type === "grid" && queryobj.gridtype === "gridgrid") {
     queryobj.quantity = "onelead";
   }
+
+  
   
   resultsrouter(queryobj);
 }
@@ -1043,6 +1072,7 @@ function submitform() {
 function resultsrouter(obj) {
   //console.log(obj);
   $("#container").contents().remove();
+  let queryarr = Object.keys(obj).map(k => encodeURIComponent(k)+"="+encodeURIComponent(obj[k]).replace(/%20/g, "+"));
   //get row array
   let title;
   //different process for method name or place notation
@@ -1069,7 +1099,9 @@ function resultsrouter(obj) {
         break;
     }
     
-    
+    if (history) {
+      history.pushState('', '', '/?'+queryarr.join("&"));
+    }
     
   } else {
     let text = obj.lookup === "name" ? "Method not found" : "Problem with place notation";
