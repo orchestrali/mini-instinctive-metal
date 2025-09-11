@@ -76,7 +76,7 @@ var blueBell;
 $(function(){
   
   getlists();
-  getqueryparams();
+  
   $("#container").svg({onLoad: (o) => {
     svg = o;
     svg.configure({xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink", width: 0, height: 0});
@@ -131,6 +131,7 @@ function getlists() {
       $.get("methods.json", function(arr) {
         bigmethodarr = arr;
         console.log("lists retrieved");
+        getqueryparams();
       });
       
     });
@@ -150,7 +151,7 @@ function getqueryparams() {
       params++;
       obj[p[0]] = p[1];
     } else {
-      let oldkey = Object.keys(oldformkeys).find(k => oldformkeys[k].includes(p[0]);
+      let oldkey = Object.keys(oldformkeys).find(k => oldformkeys[k].includes(p[0]));
       let line = p[0].startsWith("bell") && ["w", "c"].includes(p[0].slice(-1)) && Number(p[0].slice(4,-1)) > 0;
       if (oldkey || line) {
         oldparams = true;
@@ -161,21 +162,35 @@ function getqueryparams() {
     }
   }
   console.log(obj);
+  if (params > 0) checkqueryparams(obj);
 }
 
+//two issues: a search that I can't handle yet, and one with not enough info
+//not enough info needs to be handled generally
+//filling the form should be separate from submitting it
 function checkqueryparams(obj) {
+  let problem;
   //currently only grid or staff type
   if (!obj.type || !["grid", "staff"].includes(obj.type)) {
     //can't do this (yet)
+    problem = "type not available yet";
+    if (obj.type && !["grid", "staff"].includes(obj.type)) {
+      
+    }
   } else if (!obj.stage || Number(obj.stage) < 4) {
   //need stage
+    //okay but this is just not enough info
+    //well but I need stage for anything else
+    problem = "no stage";
   } else if (obj.complibid) {
     //no complibid yet
+    problem = "can't search by complib id yet";
   } else if (obj.quantity === "touch") {
     //no quantity touch yet
+    problem = "can't do touches yet";
   } else {
-    $('#stage option[value="'+obj.stage+'"]').prop("selected", true);
-    stagechange();
+    //$('#stage option[value="'+obj.stage+'"]').prop("selected", true);
+    //stagechange();
   //need methodClass and methodName, or placeNotation
     if (obj.placeNotation) {
       $('#lookupstrat input[value="pn"]').prop("checked", true);
@@ -186,12 +201,54 @@ function checkqueryparams(obj) {
       
     } else {
       //not enough info
+      problem = "not enough info";
     }
   
   //staff options pretty much same?
   //grid options a bit different
   }
   //if it's okay, fill things in and then just use the regular form submit??
+  if (!problem) {
+    fillform(obj);
+  } else {
+    console.log(problem);
+  }
+}
+
+//only send an obj here if it has keys
+function fillform(obj) {
+
+  selects.forEach(s => {
+    if (obj[s]) {
+      //assumes selects have same name and id
+      //what about blueBell
+      //maybe only some selects need to trigger a function?
+      $(`select[name="${s}"] option[value="${obj[s]}"]`).prop("selected", true);
+      $("#"+s).change();
+    }
+  });
+
+  texts.forEach(t => {
+    if (obj[t]) {
+      //also assumes same name and id but that might be correct here
+      $("#"+t).val(obj[t]);
+    }
+  });
+
+  checked.forEach(c => {
+    $(`input[name="${c}"]`).prop("checked", obj[c]);
+    if (["gap", "includeTime"].includes(c)) {
+      $(`input[name="${c}"]`).change();
+    }
+  });
+
+  radios.forEach(r => {
+    if (obj[r]) {
+      //is this really enough to get the correct thing????
+      $(`input[value="${obj[r]}"]`).prop("checked", true);
+      $("#"+r).change();
+    }
+  });
 }
 
 function resetform() {
@@ -210,10 +267,12 @@ function resetform() {
   });
   //checkboxes
   checked.forEach(w => {
-    if (formstart[w]) {
-      $(`input[name="${w}"]`).prop("checked", true);
-    }
+    $(`input[name="${w}"]`).prop("checked", formstart[w]);
   });
+
+  //overall reset
+  stage = null;
+  $(".searchstrategy").find(":input").prop("disabled", true);
 }
 
 // FORM ADJUSTMENTS - METHOD INFO
