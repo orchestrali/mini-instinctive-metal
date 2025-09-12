@@ -252,7 +252,9 @@ function fillform(obj) {
       //what about blueBell
       //maybe only some selects need to trigger a function?
       $(`select[name="${s}"] option[value="${obj[s]}"]`).prop("selected", true);
-      $("#"+s).change();
+      if (["methodClass", "keysig"].includes(s)) {
+        $("#"+s).change();
+      }
     }
   });
 
@@ -266,6 +268,14 @@ function fillform(obj) {
     }
   });
 
+  numtexts.forEach(t => {
+    if (t === "tenors" && obj[t]) {
+      //currently only staff
+      //obj.type (var type won't be set correctly yet)
+      $("#stenors").val(obj[t]).change();
+    }
+  });
+
   checked.forEach(c => {
     $(`input[name="${c}"]`).prop("checked", obj[c]);
     if (["gap", "includeTime"].includes(c)) {
@@ -273,11 +283,19 @@ function fillform(obj) {
     }
   });
 
+  //dealing with lookup earlier
   radios.forEach(r => {
-    if (obj[r]) {
+    if (r === "gridcolors") {
+      let id = obj[r] ? "#colordiff" : "#colorsame";
+      $(id).prop("checked", true);
+    } else if (r != "lookup" && obj[r]) {
       //is this really enough to get the correct thing????
+      
       $(`input[value="${obj[r]}"]`).prop("checked", true);
-      $("#"+r).change();
+      if (["type", "gridtype"].includes(r)) {
+        $("#"+r).change();
+      }
+      //type gridtype
       //for "lookup" the id is "lookupstrat" but currently I'm dealing with that earlier
     }
   });
