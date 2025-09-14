@@ -116,6 +116,7 @@ $(function(){
   $("#stenors").change(stafftenors);
   
   $("#submit").on("click", submitform);
+  $("#clearform").on("click", resetform);
   
 });
 
@@ -174,21 +175,19 @@ function checkqueryparams(obj, oldobj) {
   //currently only grid or staff type
   if (!obj.type || !["grid", "staff"].includes(obj.type)) {
     //can't do this (yet)
-    problem = "type not available yet";
-    if (obj.type && !["grid", "staff"].includes(obj.type)) {
-      
-    }
+    problem = "type";
+    
   } else if (!obj.stage || Number(obj.stage) < 4) {
   //need stage
     //okay but this is just not enough info
     //well but I need stage for anything else
-    problem = "no stage";
+    problem = "stage";
   } else if (obj.complibid) {
     //no complibid yet
-    problem = "can't search by complib id yet";
+    problem = "complib";
   } else if (obj.quantity === "touch") {
     //no quantity touch yet
-    problem = "can't do touches yet";
+    problem = "touch";
   } else {
     $('#stage option[value="'+obj.stage+'"]').prop("selected", true);
     stagechange();
@@ -237,6 +236,27 @@ function checkqueryparams(obj, oldobj) {
     submitform();
   } else {
     console.log(problem);
+    apologies(problem, obj);
+  }
+}
+
+function apologies(problem, obj) {
+  let text;
+  switch (problem) {
+    case "touch":
+      text = "Apologies, currently this website cannot display touches. Please try again in the future!";
+      break;
+    case "complib":
+      text = "Apologies, searching by complib ID is currently unavailable. Try again another day!";
+      break;
+    case "type":
+      if (obj.type && !["grid", "staff"].includes(obj.type)) {
+        text = "Apologies, "+obj.type+" mode is in the process of being rebuilt. Try again another day!";
+      }
+      break;
+  }
+  if (text) {
+    $("#container").append(`<h4>${text}</h4>`);
   }
 }
 
@@ -315,6 +335,8 @@ function resetform() {
       $('input[name="'+w+'"]').val(formstart[w]);
     }
   });
+  //trigger type change
+  $("#type").change();
   //checkboxes
   checked.forEach(w => {
     $(`input[name="${w}"]`).prop("checked", formstart[w]);
@@ -1122,8 +1144,9 @@ function resultsrouter(obj) {
         break;
     }
     
+    window.location.hash = 'svgs';
     if (history) {
-      history.pushState('', '', '/?'+queryarr.join("&"));
+      history.pushState('', '', '/?'+queryarr.join("&")+"#svgs");
     }
     
   } else {
@@ -1777,7 +1800,7 @@ function rounds(numBells) {
 }
 
 //convert row array to string
-function rowStr(row) {
+function rowstring(row) {
   let str = row.map(n => places[n-1]).join("");
   return str;
 }
@@ -2002,11 +2025,36 @@ function pnstring(pn) {
       nums = false;
     } else {
       if (nums) str += ".";
-      str += rowStr(e);
+      str += rowstring(e);
       nums = true;
     }
   });
   return str;
+}
+
+//take a change of place notation and return it in string form
+function convertpna(e) {
+  return e === "x" ? e : rowstring(e);
+}
+
+function checkpalindrome(pn) {
+  let strarr = pn.map(e => convertpna(e));
+  let count = 0;
+  let symmetrical;
+  let mod = pn.length;
+  let point = pn.length-1;
+  while (!symmetrical && count < pn.length-1) {
+    let ii = [];
+    let jj = [];
+    for (let i = 1; i <= Math.ceil(mod/2)-1; i++) {
+      ii.push((point-i)%mod);
+      jj.push((point+i)%mod);
+    }
+    symmetrical = ii.every((n,i) => strarr[n] === strarr[jj[i]]);
+    point--;
+    count++;
+  }
+  return symmetrical ? point : -1;
 }
 
 function findbypn(pn, pnstage) {
@@ -2099,7 +2147,7 @@ function buildRows(prevRow, placeNotArray, rowNum) {
 //build plain course
 function buildplaincourse(stage, pn) {
   let start = rounds(stage);
-  let roundstr = rowStr(start);
+  let roundstr = rowstring(start);
   rowArray = [{rowNum: 0, bells: start}];
   let lastrow = rounds(stage);
   let laststr;
@@ -2109,7 +2157,7 @@ function buildplaincourse(stage, pn) {
     lead = buildRows(lastrow, pn, num);
     lead.forEach(o => rowArray.push(o));
     lastrow = rowArray[rowArray.length-1].bells;
-    laststr = rowStr(lastrow);
+    laststr = rowstring(lastrow);
     num += pn.length;
   } while (laststr != roundstr);
   
