@@ -1134,7 +1134,7 @@ function resultsrouter(obj) {
   
   if (title) {
     //console.log(method.hunts);
-
+    $("#container").append(`<a name="svgs"></a>`);
     switch (obj.type) {
       case "grid":
         routergrid(obj, title);
