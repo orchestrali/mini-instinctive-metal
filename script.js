@@ -34,7 +34,7 @@ var formstart = {
 const selects = ["stage", "methodClass", "blueBell", "keysig", "actTenor"];
 const texts = ["methodName", "placeNotation"];
 const numtexts = ["tenors"];
-const radios = ["lookup", "type", "gridtype", "gridcolors"];
+const radios = ["lookup", "type", "gridtype", "gridcolors", "timesig"];
 const checked = ["numbers", "describe", "gap", "includeTime", "onlyblue", "mobile"];
 const formkeys = {
   selects: selects,
