@@ -236,7 +236,7 @@ function checkqueryparams(obj, oldobj) {
     submitform();
   } else {
     console.log(problem);
-    apologies(problem, obj);
+    //apologies(problem, obj);
   }
 }
 
