@@ -17,7 +17,7 @@ const dyPenta = [0, 5, 10, 20, 25, 35, 40, 45, 55, 60];
 var type = "grid";
 //grid display options: basic-lines, everyline, bellgroups
 //now gridline, gridgrid
-let gridtype = "gridline";
+var gridtype = "gridline";
 
 //empty/default form values
 var formstart = {
@@ -25,6 +25,7 @@ var formstart = {
   lookup: "name",
   gridtype: "gridline",
   numbers: "show",
+  gridcolors: "colors",
   gap: "yes",
   includeTime: "yes",
   keysig: "C"
@@ -75,6 +76,8 @@ var blueBell;
 
 $(function(){
   console.log(window.location.hash);
+  //disable gridgrid input elements
+  changegridtype();
   getlists();
   
   $("#container").svg({onLoad: (o) => {
@@ -456,13 +459,19 @@ function typeliclick(e) {
 
 function typeinputs() {
   $("div.type").find(":input").prop("disabled", true);
-  $("div#"+type+"opts").find(":input").prop("disabled", stage === null);
+  
   if (type === "grid") {
+    //can choose line or grid
+    $("#gridtype").prop("disabled", false);
+    //only enable one of the grid types!
+    changegridtype();
     //toggleGridTypes();
     // if it's a touch, don't allow showing pn
     if ($("#touch").is(":checked")) {
       $("#show-pn").prop("disabled", true);
     }
+  } else {
+    $("div#"+type+"opts").find(":input").prop("disabled", stage === null);
   }
 }
 
