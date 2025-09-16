@@ -925,7 +925,9 @@ function blueBellPairs(stage, numbells) {
 
 function toggleTime() {
   if (!$("#time-sig").is(":checked")) {
-    $("div#timeOpts").slideUp(1000, "swing");
+    $("div#timeOpts").addClass("hidden");
+    $("div#timeOpts > fieldset > ul > li").remove();
+    //$("div#timeOpts").slideUp(1000, "swing");
   } else if (stage > 0) {
     adjustTime();
   }
@@ -953,7 +955,8 @@ function adjustTime() {
   //actually add the stuff
   if ($("#time-sig").is(":checked")) {
     $("div#timeOpts > fieldset > ul").append(timeOpts(handTS, backTS));
-    $("div#timeOpts").slideDown(1000, "swing");
+    //$("div#timeOpts").slideDown(1000, "swing");
+    $("div#timeOpts").removeClass("hidden");
   }
 }
 
