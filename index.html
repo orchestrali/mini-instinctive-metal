@@ -86,9 +86,9 @@
                 Lookup strategy:
               </p>
               <ul>
-                <li><label><input type="radio" name="lookup" value="name" checked />search by method name</label></li>
-                <li><label><input type="radio" name="lookup" value="pn" />enter place notation</label></li>
-                <!--<li><label><input type="radio" name="lookup" value="complib" />enter complib id</label></li>-->
+                <li><label for="lookupname"><input type="radio" id="lookupname" name="lookup" value="name" checked />search by method name</label></li>
+                <li><label for="lookuppn"><input type="radio" id="lookuppn" name="lookup" value="pn" />enter place notation</label></li>
+                <!--<li><label for="lookupcomplib"><input type="radio" id="lookupcomplib" name="lookup" value="complib" />enter complib id</label></li>-->
               </ul>
             </fieldset>
           </div>
@@ -157,14 +157,14 @@
                 Display as:
               </legend>
               <ul>
-                <li><label><input type="radio" name="gridtype" value="gridline" checked />line(s)</label></li>
-                <li><label><input type="radio" name="gridtype" value="gridgrid" />grid</label></li>
+                <li><label for="gridtypeline"><input type="radio" id="gridtypeline" name="gridtype" value="gridline" checked />line(s)</label></li>
+                <li><label for="gridtypegrid"><input type="radio" id="gridtypegrid" name="gridtype" value="gridgrid" />grid</label></li>
               </ul>
             </fieldset>
             
             <div class="gridtype" id="gridline">
               <div>
-                <label><input type="checkbox" checked id="show-nums" name="numbers" value="show" />Show numbers</label>
+                <label for="show-nums"><input type="checkbox" checked id="show-nums" name="numbers" value="show" />Show numbers</label>
               </div>
               <div>
                 <label for="blueBell">
@@ -175,7 +175,7 @@
                 </select>
               </div>
               <div>
-                <label>
+                <label for="describe">
                   <input type="checkbox" id="describe" name="describe" value="show" />Show description of the blue line
                 </label>
               </div>
@@ -185,10 +185,10 @@
                 <legend>Draw working bells:</legend>
                 <ul>
                   <li>
-                    <label><input type="radio" name="gridcolors" value="0" />same color</label>
+                    <label for="colorsame"><input type="radio" id="colorsame" name="gridcolors" value="0" />same color</label>
                   </li>
                   <li>
-                    <label><input type="radio" name="gridcolors" value="colors" checked />different colors</label>
+                    <label for="colordiff"><input type="radio" id="colordiff" name="gridcolors" value="colors" checked />different colors</label>
                   </li>
                 </ul>
               </fieldset>
@@ -200,7 +200,7 @@
               Display options
             </h3>
             <div>
-              <label>Tenor(s) behind: 
+              <label for="stenors">Tenor(s) behind: 
                 <input type="number" id="stenors" name="tenors" value="0" />
               </label>
             </div>
@@ -255,18 +255,18 @@
               </span>
             </div>
             <div class="input">
-              <label for="blueBell">
+              <label for="sblueBell">
                 Choose bell to highlight (optional):
               </label>
               <select id="sblueBell" name="blueBell" class="blueBell">
                 
               </select>
-              <label>
-                <input type="checkbox" name="onlyblue" /> show only this bell
+              <label for="onlyblue">
+                <input type="checkbox" id="onlyblue" name="onlyblue" /> show only this bell
               </label>
             </div>
             <div>
-              <label>
+              <label for="mobile">
                 <input type="checkbox" id="mobile" name="mobile" value="yes" />Mobile version
               </label>
             </div>
