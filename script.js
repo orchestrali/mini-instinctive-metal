@@ -75,7 +75,8 @@ var blueBell;
 
 
 $(function(){
-  //console.log(window.location.hash);
+  console.log(/[^a-z\s0-9]/.test("mc²"));
+  console.log(respell("mc²"));
   window.location.hash = "";
   //disable gridgrid input elements
   changegridtype();
