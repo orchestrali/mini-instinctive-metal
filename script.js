@@ -75,7 +75,7 @@ var blueBell;
 
 
 $(function(){
-  console.log(window.location.hash);
+  //console.log(window.location.hash);
   window.location.hash = "";
   //disable gridgrid input elements
   changegridtype();
@@ -240,6 +240,10 @@ function checkqueryparams(obj, oldobj) {
     submitform();
   } else {
     console.log(problem);
+    if (history) {
+      //console.log("setting history");
+      history.pushState('', '', '/');
+    }
     //apologies(problem, obj);
   }
 }
@@ -1159,11 +1163,16 @@ function resultsrouter(obj) {
     
     window.location.hash = 'svgs';
     if (history) {
-      console.log("setting history");
+      //console.log("setting history");
       history.pushState('', '', '/?'+queryarr.join("&")+"#svgs");
     }
     
   } else {
+    window.location.hash = 'svgs';
+    if (history) {
+      //console.log("setting history");
+      history.pushState('', '', '/#svgs');
+    }
     let text = obj.lookup === "name" ? "Method not found" : "Problem with place notation";
     $("#container").append(`<h4>${text}</h4>`);
   }
