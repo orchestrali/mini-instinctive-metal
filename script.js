@@ -74,7 +74,7 @@ var blueBell;
 
 
 $(function(){
-  
+  console.log(window.location.hash);
   getlists();
   
   $("#container").svg({onLoad: (o) => {
@@ -1146,6 +1146,7 @@ function resultsrouter(obj) {
     
     window.location.hash = 'svgs';
     if (history) {
+      console.log("setting history");
       history.pushState('', '', '/?'+queryarr.join("&")+"#svgs");
     }
     
