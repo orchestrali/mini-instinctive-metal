@@ -337,6 +337,9 @@ function resetform() {
   //texts
   $('#methodName,#placeNotation,#complibid').val("");
   $('input[name="tenors"]').val("0");
+  //timesig stuff
+  $("div#timeOpts").addClass("hidden");
+  $("div#timeOpts > fieldset > ul > li").remove();
   //radio
   radios.forEach(w => {
     if (formstart[w]) {
@@ -344,7 +347,7 @@ function resetform() {
     }
   });
   //trigger type change
-  $("#type").change();
+  typechange();
   //checkboxes
   checked.forEach(w => {
     $(`input[name="${w}"]`).prop("checked", formstart[w]);
