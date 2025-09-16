@@ -76,6 +76,7 @@ var blueBell;
 
 $(function(){
   console.log(window.location.hash);
+  window.location.hash = "";
   //disable gridgrid input elements
   changegridtype();
   getlists();
