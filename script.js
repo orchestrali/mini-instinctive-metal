@@ -462,7 +462,7 @@ function typeinputs() {
   
   if (type === "grid") {
     //can choose line or grid
-    $("#gridtype").prop("disabled", false);
+    $("#gridtype input").prop("disabled", false);
     //only enable one of the grid types!
     changegridtype();
     //toggleGridTypes();
