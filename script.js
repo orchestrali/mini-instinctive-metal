@@ -22,10 +22,10 @@ var gridtype = "gridline";
 //empty/default form values
 var formstart = {
   type: "grid",
-  lookup: "name",
-  gridtype: "gridline",
+  lookup: "lookupname",
+  gridtype: "gridtypeline",
   numbers: "show",
-  gridcolors: "colors",
+  gridcolors: "colordiff",
   gap: "yes",
   includeTime: "yes",
   keysig: "C"
@@ -343,11 +343,13 @@ function resetform() {
   //radio
   radios.forEach(w => {
     if (formstart[w]) {
-      $('input[name="'+w+'"]').val(formstart[w]);
+      $('#'+formstart[w]).prop("checked", true);
     }
   });
+  changestrategy();
   //trigger type change
   typechange();
+  changegridtype();
   //checkboxes
   checked.forEach(w => {
     $(`input[name="${w}"]`).prop("checked", formstart[w]);
@@ -1125,9 +1127,17 @@ function submitform() {
     queryobj.quantity = "onelead";
   }
 
+  if (!queryobj.stage) {
+    $("#container").append(`<h4>Pick a stage to search for a method!</h4>`);
+  } else if (queryobj.lookup === "name" && (!queryobj.methodClass || !queryobj.methodName)) {
+    $("#container").append(`<h4>Enter a method name to view it</h4>`);
+  } else if (queryobj.lookup === "pn" && !queryobj.placeNotation) {
+    $("#container").append(`<h4>Enter place notation for the method you want to view</h4>`);
+  } else {
+    resultsrouter(queryobj);
+  }
   
   
-  resultsrouter(queryobj);
 }
 
 function resultsrouter(obj) {
