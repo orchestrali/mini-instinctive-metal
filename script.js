@@ -1116,7 +1116,7 @@ function submitform() {
 
 function resultsrouter(obj) {
   //console.log(obj);
-  $("#container").contents().remove();
+  $("#container,#anchorcontainer").contents().remove();
   let queryarr = Object.keys(obj).map(k => encodeURIComponent(k)+"="+encodeURIComponent(obj[k]).replace(/%20/g, "+"));
   //get row array
   let title;
@@ -1134,7 +1134,7 @@ function resultsrouter(obj) {
   
   if (title) {
     //console.log(method.hunts);
-    $("#container").append(`<a name="svgs"></a>`);
+    $("#anchorcontainer").append(`<a name="svgs"></a>`);
     switch (obj.type) {
       case "grid":
         routergrid(obj, title);
