@@ -629,7 +629,8 @@ function methodnameclick(e) {
 function checkname(name, val) {
   let names = [name];
   let vals = [val];
-  
+
+  //includes something not a-z, a space, or 0-9
   if (/[^a-z\s0-9]/.test(name)) {
     let altname = respell(name);
     if (altname != name) names.push(altname);
@@ -666,7 +667,7 @@ function respell(name) {
   let lstr = "áàäâāåčçéèëêēe̊íìïîīñóòöôōo̊øṟřšśúùüûūů";
   let letters = {
     a: "áàäâāå",
-    //ae: "æ",
+    ae: "æ",
     c: "čç",
     e: "éèëêēe̊",
     i: "íìïîī",
@@ -674,7 +675,11 @@ function respell(name) {
     o: "óòöôōo̊ø",
     r: "ṟř",
     s: "šś",
-    u: "úùüûūů"
+    u: "úùüûūů",
+    tm: "™",
+    "1": "₁",
+    "2": "²",
+    "3": "₃",
   };
   let alt = "";
   for (let i = 0; i < name.length; i++) {
