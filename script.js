@@ -25,11 +25,11 @@ var formstart = {
   lookup: "name",
   gridtype: "gridline",
   numbers: "show",
-  gridcolors: "colors",
   gap: "yes",
   includeTime: "yes",
   keysig: "C"
 };
+//gridcolors: "colors" // not actually default because gridline is default!
 //form inputs
 const selects = ["stage", "methodClass", "blueBell", "keysig", "actTenor"];
 const texts = ["methodName", "placeNotation"];
