@@ -75,8 +75,7 @@ var blueBell;
 
 
 $(function(){
-  console.log(/[^a-z\s0-9]/.test("mc²"));
-  console.log(respell("mc²"));
+  
   window.location.hash = "";
   //disable gridgrid input elements
   changegridtype();
@@ -1105,6 +1104,7 @@ function getChar(char, dir) {
 //click submit
 function submitform() {
   $(".results").remove();
+  window.location.hash = "";
   method = null;
   blueBell = null;
   let form = document.getElementById("formform");
