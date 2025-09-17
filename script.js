@@ -17,7 +17,40 @@ const dyPenta = [0, 5, 10, 20, 25, 35, 40, 45, 55, 60];
 var type = "grid";
 //grid display options: basic-lines, everyline, bellgroups
 //now gridline, gridgrid
-let gridtype = "gridline";
+var gridtype = "gridline";
+
+//empty/default form values
+var formstart = {
+  type: "grid",
+  lookup: "lookupname",
+  gridtype: "gridtypeline",
+  numbers: "show",
+  gridcolors: "colordiff",
+  gap: "yes",
+  includeTime: "yes",
+  keysig: "C"
+};
+//gridcolors: "colors" // not actually default because gridline is default!
+//form inputs
+const selects = ["stage", "methodClass", "blueBell", "keysig", "actTenor"];
+const texts = ["methodName", "placeNotation"];
+const numtexts = ["tenors"];
+const radios = ["lookup", "type", "gridtype", "gridcolors", "timesig"];
+const checked = ["numbers", "describe", "gap", "includeTime", "onlyblue", "mobile"];
+const formkeys = {
+  selects: selects,
+  texts: texts,
+  numbers: numtexts,
+  radios: radios,
+  checks: checked
+};
+const oldformkeys = {
+  selects: ["huntBellw", "blueBellw", "blueGroup1", "blueGroup1w", "blueGroup2w", "blueGroup2", "bell1w"],
+  texts: ["bobPlaceNot", "singlePlaceNot", "otherLeadhead", "comp", "huntColor", "blueBellc", "blueGroup1c", "blueGroup2c", "bell1c"],
+  numbers: ["complibid", "callLoc", "numrounds", "hours", "minutes"],
+  radios: ["callType", "leadhead", "quantity", "touchType", "sounds"],
+  checks: ["pn", "pagination", "huntbells", "rowzero", "keepscore", "drawLH", "tutorial", "player", "highlight"]
+};
 
 //strategies for choosing method/comp
 //default "name", others "pn" and "complib"
@@ -43,7 +76,11 @@ var blueBell;
 
 $(function(){
   
+  window.location.hash = "";
+  //disable gridgrid input elements
+  changegridtype();
   getlists();
+  
   $("#container").svg({onLoad: (o) => {
     svg = o;
     svg.configure({xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink", width: 0, height: 0});
@@ -83,6 +120,7 @@ $(function(){
   $("#stenors").change(stafftenors);
   
   $("#submit").on("click", submitform);
+  $("#clearform").on("click", resetform);
   
 });
 
@@ -98,10 +136,228 @@ function getlists() {
       $.get("methods.json", function(arr) {
         bigmethodarr = arr;
         console.log("lists retrieved");
+        getqueryparams();
       });
       
     });
   });
+}
+
+function getqueryparams() {
+  let q = new window.URLSearchParams(window.location.search);
+  let obj = {};
+  let oldobj = {};
+  let params = 0;
+  let oldparams;
+  //p[0] key, p[1] value
+  for (let p of q) {
+    //check if the key is one of the known formkeys
+    let key = Object.keys(formkeys).find(k => formkeys[k].includes(p[0]));
+    if (key && p[1].length) { 
+      params++;
+      obj[p[0]] = p[1];
+    } else {
+      let oldkey = Object.keys(oldformkeys).find(k => oldformkeys[k].includes(p[0]));
+      let line = p[0].startsWith("bell") && ["w", "c"].includes(p[0].slice(-1)) && Number(p[0].slice(4,-1)) > 0;
+      if (oldkey || line) {
+        oldparams = true;
+        if (p[1].length) {
+          oldobj[p[0]] = p[1];
+        }
+      }
+    }
+  }
+  console.log(obj);
+  if (params > 0) checkqueryparams(obj, oldobj);
+}
+
+//two issues: a search that I can't handle yet, and one with not enough info
+//not enough info needs to be handled generally
+//filling the form should be separate from submitting it
+function checkqueryparams(obj, oldobj) {
+  let problem;
+  //currently only grid or staff type
+  if (!obj.type || !["grid", "staff"].includes(obj.type)) {
+    //can't do this (yet)
+    problem = "type";
+    
+  } else if (!obj.stage || Number(obj.stage) < 4) {
+  //need stage
+    //okay but this is just not enough info
+    //well but I need stage for anything else
+    problem = "stage";
+  } else if (obj.complibid) {
+    //no complibid yet
+    problem = "complib";
+  } else if (obj.quantity === "touch") {
+    //no quantity touch yet
+    problem = "touch";
+  } else {
+    $('#stage option[value="'+obj.stage+'"]').prop("selected", true);
+    stagechange();
+  //need methodClass and methodName, or placeNotation
+    if (obj.placeNotation) {
+      $('#lookupstrat input[value="pn"]').prop("checked", true);
+      changestrategy();
+      obj.lookup = "pn";
+      
+    } else if (obj.methodClass && obj.methodName) {
+      obj.lookup = "name";
+    } else {
+      //not enough info
+      problem = "not enough info";
+    }
+  
+  //staff options pretty much same?
+  //grid options a bit different
+    if (obj.gridtype && ["basic-lines", "everyline", "bellgroups"].includes(obj.gridtype)) {
+      //conversion needed
+      //making assumptions for everyline and bellgroups
+      //include some note about making changes??
+      if (obj.numbers || obj.describe) {
+        obj.gridtype = "basic-lines";
+        //describe would need to be that anyway, but not numbers
+      }
+      switch (obj.gridtype) {
+        case "basic-lines":
+          obj.gridtype = "gridline";
+          obj.blueBell = oldobj.blueBell ? oldobj.blueBell : "auto";
+          break;
+        case "everyline":
+          obj.gridtype = "gridgrid";
+          obj.gridcolors = "colors";
+          break;
+        case "bellgroups":
+          obj.gridtype = "gridgrid";
+          obj.gridcolors = "0";
+          break;
+      }
+    }
+  }
+  //if it's okay, fill things in and then just use the regular form submit??
+  if (!problem) {
+    fillform(obj);
+    submitform();
+  } else {
+    console.log(problem);
+    if (history) {
+      //console.log("setting history");
+      history.pushState('', '', '/');
+    }
+    //apologies(problem, obj);
+  }
+}
+
+function apologies(problem, obj) {
+  let text;
+  switch (problem) {
+    case "touch":
+      text = "Apologies, currently this website cannot display touches. Please try again in the future!";
+      break;
+    case "complib":
+      text = "Apologies, searching by complib ID is currently unavailable. Try again another day!";
+      break;
+    case "type":
+      if (obj.type && !["grid", "staff"].includes(obj.type)) {
+        text = "Apologies, "+obj.type+" mode is in the process of being rebuilt. Try again another day!";
+      }
+      break;
+  }
+  if (text) {
+    $("#container").append(`<h4>${text}</h4>`);
+  }
+}
+
+//only send an obj here if it has keys
+function fillform(obj) {
+
+  //need to do the text numbers too
+  
+  selects.forEach(s => {
+    //dealing with stage earlier 
+    if (s != "stage" && obj[s]) {
+      //assumes selects have same name and id
+      //what about blueBell
+      //maybe only some selects need to trigger a function?
+      $(`select[name="${s}"] option[value="${obj[s]}"]`).prop("selected", true);
+      if (["methodClass", "keysig"].includes(s)) {
+        $("#"+s).change();
+      }
+    }
+  });
+
+  texts.forEach(t => {
+    if (obj[t]) {
+      //also assumes same name and id but that might be correct here
+      $("#"+t).val(obj[t]);
+      if (t === "placeNotation") {
+        $("#placeNotation").trigger("keyup");
+      }
+    }
+  });
+
+  numtexts.forEach(t => {
+    if (t === "tenors" && obj[t]) {
+      //currently only staff
+      //obj.type (var type won't be set correctly yet)
+      $("#stenors").val(obj[t]).change();
+    }
+  });
+
+  checked.forEach(c => {
+    $(`input[name="${c}"]`).prop("checked", obj[c]);
+    if (["gap", "includeTime"].includes(c)) {
+      $(`input[name="${c}"]`).change();
+    }
+  });
+
+  //dealing with lookup earlier
+  radios.forEach(r => {
+    if (r === "gridcolors") {
+      let id = obj[r] ? "#colordiff" : "#colorsame";
+      $(id).prop("checked", true);
+    } else if (r != "lookup" && obj[r]) {
+      //is this really enough to get the correct thing????
+      
+      $(`input[value="${obj[r]}"]`).prop("checked", true);
+      if (["type", "gridtype"].includes(r)) {
+        $("#"+r).change();
+      }
+      //type gridtype
+      //for "lookup" the id is "lookupstrat" but currently I'm dealing with that earlier
+    }
+  });
+}
+
+function resetform() {
+  //selects
+  $("#stage option:first-child").prop("selected", true);
+  $("#keysig").val("C");
+  $('#methodClass,#actTenor,select[name="blueBell"]').children().remove();
+  //texts
+  $('#methodName,#placeNotation,#complibid').val("");
+  $('input[name="tenors"]').val("0");
+  //timesig stuff
+  $("div#timeOpts").addClass("hidden");
+  $("div#timeOpts > fieldset > ul > li").remove();
+  //radio
+  radios.forEach(w => {
+    if (formstart[w]) {
+      $('#'+formstart[w]).prop("checked", true);
+    }
+  });
+  changestrategy();
+  //trigger type change
+  typechange();
+  changegridtype();
+  //checkboxes
+  checked.forEach(w => {
+    $(`input[name="${w}"]`).prop("checked", formstart[w]);
+  });
+
+  //overall reset
+  stage = null;
+  $(".searchstrategy").find(":input").prop("disabled", true);
 }
 
 // FORM ADJUSTMENTS - METHOD INFO
@@ -213,13 +469,19 @@ function typeliclick(e) {
 
 function typeinputs() {
   $("div.type").find(":input").prop("disabled", true);
-  $("div#"+type+"opts").find(":input").prop("disabled", stage === null);
+  
   if (type === "grid") {
+    //can choose line or grid
+    $("#gridtype input").prop("disabled", false);
+    //only enable one of the grid types!
+    changegridtype();
     //toggleGridTypes();
     // if it's a touch, don't allow showing pn
     if ($("#touch").is(":checked")) {
       $("#show-pn").prop("disabled", true);
     }
+  } else {
+    $("div#"+type+"opts").find(":input").prop("disabled", stage === null);
   }
 }
 
@@ -367,7 +629,8 @@ function methodnameclick(e) {
 function checkname(name, val) {
   let names = [name];
   let vals = [val];
-  
+
+  //includes something not a-z, a space, or 0-9
   if (/[^a-z\s0-9]/.test(name)) {
     let altname = respell(name);
     if (altname != name) names.push(altname);
@@ -401,10 +664,10 @@ function checkname(name, val) {
 function respell(name) {
   //'.()!-?&,£="/₃₁²™
   //éèëøůáčöåòùûàóìäúñṟāêæâîü
-  let lstr = "áàäâāåčçéèëêēe̊íìïîīñóòöôōo̊øṟřšśúùüûūů";
+  let lstr = "áàäâāåčçéèëêēe̊íìïîīñóòöôōo̊øṟřšśúùüûūůæ₃₁²™";
   let letters = {
     a: "áàäâāå",
-    //ae: "æ",
+    ae: "æ",
     c: "čç",
     e: "éèëêēe̊",
     i: "íìïîī",
@@ -412,7 +675,11 @@ function respell(name) {
     o: "óòöôōo̊ø",
     r: "ṟř",
     s: "šś",
-    u: "úùüûūů"
+    u: "úùüûūů",
+    tm: "™",
+    "1": "₁",
+    "2": "²",
+    "3": "₃",
   };
   let alt = "";
   for (let i = 0; i < name.length; i++) {
@@ -435,7 +702,7 @@ function getMethods(methods, howMany) {
     methodSet.push(methods[methodNum]);
     methods.splice(methodNum, 1);
     n++
-  } while (n < howMany && methods.length > 0)
+  } while (n < howMany && methods.length > 0);
     return methodSet;
 }
 
@@ -464,29 +731,27 @@ function removeItems(value) {
   $("#methodList li").css("display", "list-item");
 }
 
-//search json methodNames file, returns array of arrays with methods
+//search json methodNames file, returns array with methods
 function methodNames(stage, checkedClass) {
-  
+  let classMethods = [];
   if (checkedClass == "Plain") {
     var plainClasses = ["Bob", "Place"];
-    let classMethods = [];
-    for (var i = 0; i < plainClasses.length; i++) {
+    
+    for (let i = 0; i < plainClasses.length; i++) {
 
       let methods = methodNameList.find(o => o.stage == stage).classes.find(o => o.class == plainClasses[i]).methods;
-      for (var j = 0; j < methods.length; j++) {
-        classMethods.push(methods[j]);
-      }
+      classMethods.push(...methods);
     }
     //console.log("length of classMethods", classMethods.length);
-    return classMethods;
+    
   } else {
-    let classMethods = methodNameList.find(o => o.stage == stage).classes.find(o => o.class == checkedClass).methods;
-  //console.log("length of classMethods", classMethods.length);
-    return classMethods;
+    classMethods = methodNameList.find(o => o.stage == stage).classes.find(o => o.class == checkedClass).methods;
+    
   }
-  
+  return classMethods;
 }
 
+//hopefully now works with plain array of method names???
 function methodnamekeyup(event) {
   hidenamelist();
   
@@ -508,11 +773,9 @@ function methodnamekeyup(event) {
     let stageName = getStageName(stage);
     
     //calculate number of methods in the class
-    let numArrays = methodList.length;
-    let numMethods = 0;
-    for (var i = 0; i < numArrays; ++i) {
-      numMethods += methodList[i].length;
-    }
+    
+    let numMethods = methodList.length;
+    
     
     //remove the message to pick stage and class
     $("li#warning").remove();
@@ -527,7 +790,7 @@ function methodnamekeyup(event) {
     if (numMethods < 16) {
       for (var j = 0; j < numMethods; j++) {
         //chop off the stage name
-        let text = methodList[0][j].substring(0,methodList[0][j].length-1-stageName.length);
+        let text = methodList[j].substring(0,methodList[j].length-1-stageName.length);
         methods.push(text);
         if (checkname(text.toLowerCase(), value)) {
           numMatch++;
@@ -535,15 +798,15 @@ function methodnamekeyup(event) {
       }
     } else {
       //if there are ≥16 methods, make an array of those that match search
-      for (var j = 0; j < numArrays; ++j) {
-        for (var k = 0; k < methodList[j].length; ++k) {
-          let method = methodList[j][k].substring(0,methodList[j][k].length-1-stageName.length);
+      
+        for (var k = 0; k < methodList.length; ++k) {
+          let method = methodList[k].substring(0,methodList[k].length-1-stageName.length);
           if (checkname(method.toLowerCase(), value)) {
             methods.push(method);
             numMatch++;
           }
         }
-      }
+      
     }
     
     //if no methods match, say so
@@ -672,7 +935,9 @@ function blueBellPairs(stage, numbells) {
 
 function toggleTime() {
   if (!$("#time-sig").is(":checked")) {
-    $("div#timeOpts").slideUp(1000, "swing");
+    $("div#timeOpts").addClass("hidden");
+    $("div#timeOpts > fieldset > ul > li").remove();
+    //$("div#timeOpts").slideUp(1000, "swing");
   } else if (stage > 0) {
     adjustTime();
   }
@@ -700,7 +965,8 @@ function adjustTime() {
   //actually add the stuff
   if ($("#time-sig").is(":checked")) {
     $("div#timeOpts > fieldset > ul").append(timeOpts(handTS, backTS));
-    $("div#timeOpts").slideDown(1000, "swing");
+    //$("div#timeOpts").slideDown(1000, "swing");
+    $("div#timeOpts").removeClass("hidden");
   }
 }
 
@@ -838,11 +1104,13 @@ function getChar(char, dir) {
 //click submit
 function submitform() {
   $(".results").remove();
+  window.location.hash = "";
   method = null;
   blueBell = null;
   let form = document.getElementById("formform");
   let data = new FormData(form);
   queryobj = {};
+  let queryarr = [];
   
   for (let key of data.entries()) {
     switch (key[0]) {
@@ -864,13 +1132,24 @@ function submitform() {
   if (queryobj.type === "grid" && queryobj.gridtype === "gridgrid") {
     queryobj.quantity = "onelead";
   }
+
+  if (!queryobj.stage) {
+    $("#container").append(`<h4>Pick a stage to search for a method!</h4>`);
+  } else if (queryobj.lookup === "name" && (!queryobj.methodClass || !queryobj.methodName)) {
+    $("#container").append(`<h4>Enter a method name to view it</h4>`);
+  } else if (queryobj.lookup === "pn" && !queryobj.placeNotation) {
+    $("#container").append(`<h4>Enter place notation for the method you want to view</h4>`);
+  } else {
+    resultsrouter(queryobj);
+  }
   
-  resultsrouter(queryobj);
+  
 }
 
 function resultsrouter(obj) {
   //console.log(obj);
   $("#container").contents().remove();
+  let queryarr = Object.keys(obj).map(k => encodeURIComponent(k)+"="+encodeURIComponent(obj[k]).replace(/%20/g, "+"));
   //get row array
   let title;
   //different process for method name or place notation
@@ -887,7 +1166,7 @@ function resultsrouter(obj) {
   
   if (title) {
     //console.log(method.hunts);
-
+    //$("#anchorcontainer").append(`<a name="svgs"></a>`);
     switch (obj.type) {
       case "grid":
         routergrid(obj, title);
@@ -897,9 +1176,18 @@ function resultsrouter(obj) {
         break;
     }
     
-    
+    window.location.hash = 'svgs';
+    if (history) {
+      //console.log("setting history");
+      history.pushState('', '', '/?'+queryarr.join("&")+"#svgs");
+    }
     
   } else {
+    window.location.hash = 'svgs';
+    if (history) {
+      //console.log("setting history");
+      history.pushState('', '', '/#svgs');
+    }
     let text = obj.lookup === "name" ? "Method not found" : "Problem with place notation";
     $("#container").append(`<h4>${text}</h4>`);
   }
@@ -1550,7 +1838,7 @@ function rounds(numBells) {
 }
 
 //convert row array to string
-function rowStr(row) {
+function rowstring(row) {
   let str = row.map(n => places[n-1]).join("");
   return str;
 }
@@ -1616,6 +1904,7 @@ function pnlexer(pn, pnstage) {
         token.type = "separator";
         break;
       case "x": case "-":
+        token.value = "x";
         token.type = "all change";
         break;
       default:
@@ -1774,11 +2063,36 @@ function pnstring(pn) {
       nums = false;
     } else {
       if (nums) str += ".";
-      str += rowStr(e);
+      str += rowstring(e);
       nums = true;
     }
   });
   return str;
+}
+
+//take a change of place notation and return it in string form
+function convertpna(e) {
+  return e === "x" ? e : rowstring(e);
+}
+
+function checkpalindrome(pn) {
+  let strarr = pn.map(e => convertpna(e));
+  let count = 0;
+  let symmetrical;
+  let mod = pn.length;
+  let point = pn.length-1;
+  while (!symmetrical && count < pn.length-1) {
+    let ii = [];
+    let jj = [];
+    for (let i = 1; i <= Math.ceil(mod/2)-1; i++) {
+      ii.push((point-i)%mod);
+      jj.push((point+i)%mod);
+    }
+    symmetrical = ii.every((n,i) => strarr[n] === strarr[jj[i]]);
+    point--;
+    count++;
+  }
+  return symmetrical ? point : -1;
 }
 
 function findbypn(pn, pnstage) {
@@ -1871,7 +2185,7 @@ function buildRows(prevRow, placeNotArray, rowNum) {
 //build plain course
 function buildplaincourse(stage, pn) {
   let start = rounds(stage);
-  let roundstr = rowStr(start);
+  let roundstr = rowstring(start);
   rowArray = [{rowNum: 0, bells: start}];
   let lastrow = rounds(stage);
   let laststr;
@@ -1881,7 +2195,7 @@ function buildplaincourse(stage, pn) {
     lead = buildRows(lastrow, pn, num);
     lead.forEach(o => rowArray.push(o));
     lastrow = rowArray[rowArray.length-1].bells;
-    laststr = rowStr(lastrow);
+    laststr = rowstring(lastrow);
     num += pn.length;
   } while (laststr != roundstr);
   
