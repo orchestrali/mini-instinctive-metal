@@ -1390,14 +1390,17 @@ function buildpaths2(bb) {
     });
   }
   let colors = ["blue", "green", "purple"];
-  bb.forEach((b,i) => {
+  let i = 0;
+  bb.forEach((b) => {
     if (!used.includes(b)) {
       let path = {
         bell: b,
         weight: 2,
         color: colors[i]
       };
+      i++;
       paths.push(path);
+      if (i === colors.length) i = 0;
     }
   });
   return paths;
@@ -1463,7 +1466,7 @@ function drawgridsvg(arr, paths, width, x) {
     yinc = 12;
   }
   let height = arr.length * yinc;
-  let gridwidth = (arr.some(r => r.method) || arr[0].description) ? width+500 : width;
+  let gridwidth = (arr.some(r => r.method) || arr[0].description) ? width+500 : width+100;
   $("#container").append('<div class="grid"></div>');
   let grid = svg.svg($("div.grid:last-child"), null, null, gridwidth, height, {class: "grid", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink"});
   
@@ -1520,7 +1523,7 @@ function drawplacebells(x, y, paths, row) {
   for (let i = 0; i < paths.length; i++) {
     let num = paths[i].bell;
     let place = row.indexOf(num);
-    svg.circle($("#placebell"+num), x+i*12, y, 6);
+    svg.circle($("#placebell"+num), x+i*12, y-4, 6);
     svg.text($("#placebelltext"+num), x+i*12, y, places[place]);
   }
 }
