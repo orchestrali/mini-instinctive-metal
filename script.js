@@ -1325,17 +1325,20 @@ function drawNumbers(arr, x, parent) {
 function drawPath(arr, bell, x, parent, yinc) {
   let g = drawElement("group", [parent, {style: "stroke:"+bell.color+"; stroke-width:"+bell.weight+"; fill:none;"}]);
   let num = bell.bell;
+  svg.group(parent, "placebell"+num, {style: "stroke:"+bell.color+"; stroke-width:1; fill:none;"});
+  svg.group(parent, "placebelltext"+num, {style: "fill:"+bell.color+"; font-family: Arial; font-size: 8pt; text-anchor: middle;"});
   let current = arr[0].bells.indexOf(num);
   let path = "M "+(current*16+x)+" "+(yinc/2);
   for (let i = 1; i < arr.length; i++) {
     let index = arr[i].bells.indexOf(num);
     if (index === current) {
-      path += " v"+yinc;
+      path += " v ";
     } else if (index > current) {
-      path += " l16,"+yinc;
+      path += " l 16 ";
     } else if (index < current) {
-      path += " l-16,"+yinc;
+      path += " l -16 ";
     }
+    path += yinc;
     current = index;
   }
   drawElement("path", [g, path]);
@@ -1479,6 +1482,11 @@ function drawgridsvg(arr, paths, width, x) {
   let lines = svg.group(grid, {style: "stroke: #111; stroke-width:1;"});
   svg.line(lines, x-2, yinc, width, yinc);
   let stedman = arr.find(r => r.name === "new six");
+  let filtered = paths.filter(o => o.color != "red");
+  if (filtered.length && !queryobj.describe && !stedman) {
+    drawplacebells(width+20, yinc-6, filtered, arr[0].bells);
+  }
+  
   for (let i = 1; i < arr.length; i++) {
     let y = arr[i].rowNum * yinc;
     if (arr[i].name === "new six") {
@@ -1486,6 +1494,9 @@ function drawgridsvg(arr, paths, width, x) {
     }
     if (arr[i].name === "leadhead" && !stedman) {
       svg.line(lines, x-2, y, width, y);
+      if (filtered.length && !queryobj.describe) {
+        drawplacebells(width+20, y-6, filtered, arr[i].bells);
+      }
     }
     if (["b", "s"].includes(arr[i].type)) {
       let t = arr[i].type === "b" ? "-" : "s";
@@ -1502,6 +1513,16 @@ function drawgridsvg(arr, paths, width, x) {
     drawdescript(text, x);
   }
   
+}
+
+
+function drawplacebells(x, y, paths, row) {
+  for (let i = 0; i < paths.length; i++) {
+    let num = paths[i].bell;
+    let place = row.indexOf(num);
+    svg.circle($("#placebell"+num), x+i*12, y, 6);
+    svg.text($("#placebelltext"+num), x+i*12, y, places[place]);
+  }
 }
 
 function drawdescript(group, x) {
