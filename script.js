@@ -51,6 +51,11 @@ const oldformkeys = {
   radios: ["callType", "leadhead", "quantity", "touchType", "sounds"],
   checks: ["pn", "pagination", "huntbells", "rowzero", "keepscore", "drawLH", "tutorial", "player", "highlight"]
 };
+const keysforall = ["stage", "lookup", "methodClass", "methodName", "placeNotation", "type"];
+const typekeys = {
+  grid: ["gridtype", "numbers", "blueBell", "describe", "gridcolors"],
+  staff: ["blueBell", "tenors", "gap", "includeTime", "timesig", "keysig", "actTenor", "onlyblue", "mobile"]
+};
 
 //strategies for choosing method/comp
 //default "name", others "pn" and "complib"
@@ -70,6 +75,7 @@ var queryobj;
 
 var method;
 var rowArray;
+//individual bell (number) for gridline with describe; may be array otherwise
 var blueBell;
 
 
@@ -113,6 +119,8 @@ $(function(){
   $("#type").change(typechange);
   $("#type li").on("click", typeliclick);
   $("#gridtype").change(changegridtype);
+
+  $("#blueBell").change(gridbluechange);
 
   $("#keysig").change(toggleKey);
   $("#time-sig").change(toggleTime);
@@ -167,11 +175,12 @@ function getqueryparams() {
       }
     }
   }
-  console.log(obj);
+  //console.log(obj);
   if (params > 0) checkqueryparams(obj, oldobj);
 }
 
 //two issues: a search that I can't handle yet, and one with not enough info
+//third issue: too much info! conflicting info!
 //not enough info needs to be handled generally
 //filling the form should be separate from submitting it
 function checkqueryparams(obj, oldobj) {
@@ -210,29 +219,20 @@ function checkqueryparams(obj, oldobj) {
   
   //staff options pretty much same?
   //grid options a bit different
-    if (obj.gridtype && ["basic-lines", "everyline", "bellgroups"].includes(obj.gridtype)) {
-      //conversion needed
-      //making assumptions for everyline and bellgroups
-      //include some note about making changes??
-      if (obj.numbers || obj.describe) {
-        obj.gridtype = "basic-lines";
-        //describe would need to be that anyway, but not numbers
-      }
-      switch (obj.gridtype) {
-        case "basic-lines":
-          obj.gridtype = "gridline";
-          obj.blueBell = oldobj.blueBell ? oldobj.blueBell : "auto";
-          break;
-        case "everyline":
-          obj.gridtype = "gridgrid";
-          obj.gridcolors = "colors";
-          break;
-        case "bellgroups":
-          obj.gridtype = "gridgrid";
-          obj.gridcolors = "0";
-          break;
+    //had a version based on old gridtypes, but those weren't added to the query!!!
+    if (obj.type === "grid" && !obj.gridtype) {
+      if (obj.numbers || obj.describe || obj.blueBell) {
+        obj.gridtype = "gridline";
+        if (!obj.blueBell) obj.blueBell = "auto";
+      } else if (oldobj.blueGroup1 || oldobj.blueGroup2) {
+        obj.gridtype = "gridgrid";
+        obj.gridcolors = "0";
+      } else if (oldobj.bell1w) {
+        obj.gridtype = "gridgrid";
+        obj.gridcolors = "colors";
       }
     }
+    
   }
   //if it's okay, fill things in and then just use the regular form submit??
   if (!problem) {
@@ -396,7 +396,7 @@ function stagechange() {
     $("#methodName").prop("placeholder", "Select a stage and class to search methods");
   }
 
-  //handbellpair
+  
   //remove blueBell options and add a blank selected option
   $('select.blueBell').children().detach();
   $('<option></option>').appendTo('select#sblueBell');
@@ -405,6 +405,8 @@ function stagechange() {
   blueBell = null;
 
   blueBellOpts(stage);
+  //gridhandbellpair
+  blueBellPairs(stage, stage, "#blueBell");
   //add handbell pairs to staff bluebell options
   //will be done in the staff tenors function
 
@@ -431,6 +433,11 @@ function stagechange() {
   */
 }
 
+function gridbluechange() {
+  let val = $("#blueBell option:checked").val();
+  $("#describe").prop("disabled", val.includes("-"));
+}
+
 
 function stafftenors() {
   numbells = Number($("input#stenors").val()) + stage;
@@ -443,7 +450,7 @@ function stafftenors() {
   adjustTime();
   tenOpts(keysig, numbells);
   $('option.bluepair').remove();
-  blueBellPairs(stage, numbells);
+  blueBellPairs(stage, numbells, "#sblueBell");
 }
 
 //switch between method name, pn, or complib
@@ -922,11 +929,12 @@ function blueBellOpts(stage) {
   }
 }
 
-function blueBellPairs(stage, numbells) {
+function blueBellPairs(stage, numbells, id) {
   let max = stage%2 === 0 ? stage : numbells > stage ? stage+1 : stage-1;
   for (let i = 1; i < max; i+=2) {
     let val = [i,i+1].join("-");
-    $('<option class="bluepair"></option>').text(val).val(val).appendTo('select#sblueBell');
+    let c = id === "#sblueBell" ? ` class="bluepair"` : "";
+    $(`<option${c}></option>`).text(val).val(val).appendTo(id);
   }
 }
 
@@ -1200,7 +1208,8 @@ function routergrid(obj, title) {
   switch (obj.gridtype) {
     case "gridline":
       if (obj.blueBell != "auto") {
-        blueBell = Number(obj.blueBell);
+        //gridhandbellpair
+        //blueBell = Number(obj.blueBell);
       }
       let pbs = !method.stedman && method.leadLength > 3;
       drawgrid(pbs);
@@ -1362,6 +1371,7 @@ function gridcolorsets(n) {
   return colors;
 }
 
+//arrange the paths to draw for gridline
 function buildpaths2(bb) {
   let paths = [];
   let used = [];
@@ -1410,13 +1420,17 @@ function drawgrid(pbs) {
     let n = queryobj.describe ? 1 : 2;
     blue = chooseworking(n);
     blueBell = blue[0];
+  } else if (queryobj.blueBell.includes("-")) {
+    blue = queryobj.blueBell.split("-").map(s => Number(s));
   } else {
+    blueBell = Number(queryobj.blueBell);
+    //gridhandbellpair
     blue = [blueBell];
   }
   
   let paths = buildpaths2(blue);
   
-  if (queryobj.describe) {
+  if (queryobj.describe && blueBell) {
     let working = !method.hunts.includes(blueBell);
     describenew(rowArray, blueBell, stage, method.hunts, pbs && working);
   }
