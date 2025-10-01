@@ -1477,7 +1477,7 @@ function drawgrid(pbs) {
   }
 }
 
-let shadebackstrokes = true;
+let shadebackstrokes = false;
 function drawgridsvg(arr, paths, width, x) {
   let xinc = 16;
   let yinc = 20;
@@ -1490,7 +1490,7 @@ function drawgridsvg(arr, paths, width, x) {
   let grid = svg.svg($("div.grid:last-child"), null, null, gridwidth, height, {class: "grid", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink"});
 
   if (shadebackstrokes && gridtype === "gridgrid") {
-    let group = svg.group(grid, {fill: "#dddddd"});
+    let group = svg.group(grid, {fill: "#eeeeee"});
     for (let i = 0; i < arr.length; i+=2) {
       let y = 1+i*yinc;
       svg.rect(group, x-2, y, width-x+2, 10);
