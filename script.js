@@ -1500,6 +1500,7 @@ function drawgridsvg(arr, paths, width, x) {
   //draw place notation
   if (queryobj.pn && arr[0].rowNum < method.leadLength && queryobj.quantity != "touch") {
     let points = checkpalindrome(method.plainPN);
+    let top = yinc + (yinc === 12 ? 3 : 4);
     let style = "font-family: Verdana, sans-serif; fill: #000; font-size: ";
     style += gridtype === "gridline" ? "12px;" : "8px;";
     let pngroup = svg.group(grid, {style: style});
@@ -1509,12 +1510,12 @@ function drawgridsvg(arr, paths, width, x) {
       let pn = convertpna(method.plainPN[i]);
       let color;
       if (points && (points[0] === 0 || points[1] === method.leadLength-1)) {
-        let change = points[0] === 0 ? points[1]+1 : i === method.leadLength ? method.leadLength : points[0]+1;
+        let change = points[0] === 0 ? points[1] : i === method.leadLength-1 ? method.leadLength : points[0];
         if (i > change) {
           color = {fill: "#999999"};
         }
       }
-      let text = svg.text(pngroup, 5, yinc+4+j*yinc, pn);
+      let text = svg.text(pngroup, 5, top+j*yinc, pn);
       if (color) {
         $(text).attr(color);
       }
@@ -1540,7 +1541,7 @@ function drawgridsvg(arr, paths, width, x) {
     }
     if (arr[i].name === "leadhead" && !stedman) {
       svg.line(lines, x-2, y, width, y);
-      if (filtered.length && !queryobj.describe) {
+      if (filtered.length && !queryobj.describe && gridtype === "gridline") {
         drawplacebells(width+20, y-6, filtered, arr[i].bells);
       }
     }
