@@ -36,7 +36,7 @@ const selects = ["stage", "methodClass", "blueBell", "keysig", "actTenor"];
 const texts = ["methodName", "placeNotation"];
 const numtexts = ["tenors"];
 const radios = ["lookup", "type", "gridtype", "gridcolors", "timesig"];
-const checked = ["numbers", "describe", "gap", "includeTime", "onlyblue", "mobile"];
+const checked = ["numbers", "describe", "pn", "gap", "includeTime", "onlyblue", "mobile"];
 const formkeys = {
   selects: selects,
   texts: texts,
@@ -49,7 +49,12 @@ const oldformkeys = {
   texts: ["bobPlaceNot", "singlePlaceNot", "otherLeadhead", "comp", "huntColor", "blueBellc", "blueGroup1c", "blueGroup2c", "bell1c"],
   numbers: ["complibid", "callLoc", "numrounds", "hours", "minutes"],
   radios: ["callType", "leadhead", "quantity", "touchType", "sounds"],
-  checks: ["pn", "pagination", "huntbells", "rowzero", "keepscore", "drawLH", "tutorial", "player", "highlight"]
+  checks: ["pagination", "huntbells", "rowzero", "keepscore", "drawLH", "tutorial", "player", "highlight"]
+};
+const keysforall = ["stage", "lookup", "methodClass", "methodName", "placeNotation", "type"];
+const typekeys = {
+  grid: ["gridtype", "pn", "numbers", "blueBell", "describe", "gridcolors"],
+  staff: ["blueBell", "tenors", "gap", "includeTime", "timesig", "keysig", "actTenor", "onlyblue", "mobile"]
 };
 
 //strategies for choosing method/comp
@@ -70,6 +75,7 @@ var queryobj;
 
 var method;
 var rowArray;
+//individual bell (number) for gridline with describe; may be array otherwise
 var blueBell;
 
 
@@ -113,6 +119,8 @@ $(function(){
   $("#type").change(typechange);
   $("#type li").on("click", typeliclick);
   $("#gridtype").change(changegridtype);
+
+  $("#blueBell").change(gridbluechange);
 
   $("#keysig").change(toggleKey);
   $("#time-sig").change(toggleTime);
@@ -167,11 +175,12 @@ function getqueryparams() {
       }
     }
   }
-  console.log(obj);
+  //console.log(obj);
   if (params > 0) checkqueryparams(obj, oldobj);
 }
 
 //two issues: a search that I can't handle yet, and one with not enough info
+//third issue: too much info! conflicting info!
 //not enough info needs to be handled generally
 //filling the form should be separate from submitting it
 function checkqueryparams(obj, oldobj) {
@@ -210,29 +219,20 @@ function checkqueryparams(obj, oldobj) {
   
   //staff options pretty much same?
   //grid options a bit different
-    if (obj.gridtype && ["basic-lines", "everyline", "bellgroups"].includes(obj.gridtype)) {
-      //conversion needed
-      //making assumptions for everyline and bellgroups
-      //include some note about making changes??
-      if (obj.numbers || obj.describe) {
-        obj.gridtype = "basic-lines";
-        //describe would need to be that anyway, but not numbers
-      }
-      switch (obj.gridtype) {
-        case "basic-lines":
-          obj.gridtype = "gridline";
-          obj.blueBell = oldobj.blueBell ? oldobj.blueBell : "auto";
-          break;
-        case "everyline":
-          obj.gridtype = "gridgrid";
-          obj.gridcolors = "colors";
-          break;
-        case "bellgroups":
-          obj.gridtype = "gridgrid";
-          obj.gridcolors = "0";
-          break;
+    //had a version based on old gridtypes, but those weren't added to the query!!!
+    if (obj.type === "grid" && !obj.gridtype) {
+      if (obj.numbers || obj.describe || obj.blueBell) {
+        obj.gridtype = "gridline";
+        if (!obj.blueBell) obj.blueBell = "auto";
+      } else if (oldobj.blueGroup1 || oldobj.blueGroup2) {
+        obj.gridtype = "gridgrid";
+        obj.gridcolors = "0";
+      } else if (oldobj.bell1w) {
+        obj.gridtype = "gridgrid";
+        obj.gridcolors = "colors";
       }
     }
+    
   }
   //if it's okay, fill things in and then just use the regular form submit??
   if (!problem) {
@@ -396,7 +396,7 @@ function stagechange() {
     $("#methodName").prop("placeholder", "Select a stage and class to search methods");
   }
 
-  //handbellpair
+  
   //remove blueBell options and add a blank selected option
   $('select.blueBell').children().detach();
   $('<option></option>').appendTo('select#sblueBell');
@@ -405,6 +405,8 @@ function stagechange() {
   blueBell = null;
 
   blueBellOpts(stage);
+  //gridhandbellpair
+  blueBellPairs(stage, stage, "#blueBell");
   //add handbell pairs to staff bluebell options
   //will be done in the staff tenors function
 
@@ -431,6 +433,11 @@ function stagechange() {
   */
 }
 
+function gridbluechange() {
+  let val = $("#blueBell option:checked").val();
+  $("#describe").prop("disabled", val.includes("-"));
+}
+
 
 function stafftenors() {
   numbells = Number($("input#stenors").val()) + stage;
@@ -443,7 +450,7 @@ function stafftenors() {
   adjustTime();
   tenOpts(keysig, numbells);
   $('option.bluepair').remove();
-  blueBellPairs(stage, numbells);
+  blueBellPairs(stage, numbells, "#sblueBell");
 }
 
 //switch between method name, pn, or complib
@@ -472,7 +479,7 @@ function typeinputs() {
   
   if (type === "grid") {
     //can choose line or grid
-    $("#gridtype input").prop("disabled", false);
+    $("#gridtype input,#show-pn").prop("disabled", false);
     //only enable one of the grid types!
     changegridtype();
     //toggleGridTypes();
@@ -922,11 +929,12 @@ function blueBellOpts(stage) {
   }
 }
 
-function blueBellPairs(stage, numbells) {
+function blueBellPairs(stage, numbells, id) {
   let max = stage%2 === 0 ? stage : numbells > stage ? stage+1 : stage-1;
   for (let i = 1; i < max; i+=2) {
     let val = [i,i+1].join("-");
-    $('<option class="bluepair"></option>').text(val).val(val).appendTo('select#sblueBell');
+    let c = id === "#sblueBell" ? ` class="bluepair"` : "";
+    $(`<option${c}></option>`).text(val).val(val).appendTo(id);
   }
 }
 
@@ -1200,7 +1208,8 @@ function routergrid(obj, title) {
   switch (obj.gridtype) {
     case "gridline":
       if (obj.blueBell != "auto") {
-        blueBell = Number(obj.blueBell);
+        //gridhandbellpair
+        //blueBell = Number(obj.blueBell);
       }
       let pbs = !method.stedman && method.leadLength > 3;
       drawgrid(pbs);
@@ -1316,17 +1325,20 @@ function drawNumbers(arr, x, parent) {
 function drawPath(arr, bell, x, parent, yinc) {
   let g = drawElement("group", [parent, {style: "stroke:"+bell.color+"; stroke-width:"+bell.weight+"; fill:none;"}]);
   let num = bell.bell;
+  svg.group(parent, "placebell"+num, {style: "stroke:"+bell.color+"; stroke-width:1; fill:none;"});
+  svg.group(parent, "placebelltext"+num, {style: "fill:"+bell.color+"; font-family: Arial; font-size: 8pt; text-anchor: middle;"});
   let current = arr[0].bells.indexOf(num);
   let path = "M "+(current*16+x)+" "+(yinc/2);
   for (let i = 1; i < arr.length; i++) {
     let index = arr[i].bells.indexOf(num);
     if (index === current) {
-      path += " v"+yinc;
+      path += " v ";
     } else if (index > current) {
-      path += " l16,"+yinc;
+      path += " l 16 ";
     } else if (index < current) {
-      path += " l-16,"+yinc;
+      path += " l -16 ";
     }
+    path += yinc;
     current = index;
   }
   drawElement("path", [g, path]);
@@ -1362,6 +1374,7 @@ function gridcolorsets(n) {
   return colors;
 }
 
+//arrange the paths to draw for gridline
 function buildpaths2(bb) {
   let paths = [];
   let used = [];
@@ -1377,14 +1390,17 @@ function buildpaths2(bb) {
     });
   }
   let colors = ["blue", "green", "purple"];
-  bb.forEach((b,i) => {
+  let i = 0;
+  bb.forEach((b) => {
     if (!used.includes(b)) {
       let path = {
         bell: b,
         weight: 2,
         color: colors[i]
       };
+      i++;
       paths.push(path);
+      if (i === colors.length) i = 0;
     }
   });
   return paths;
@@ -1395,28 +1411,50 @@ function buildpaths2(bb) {
 function drawgridgrid() {
   let width = rowArray[0].bells.length*16 + 38;
   let x = 40;
+  let add = adjustwidth();
+  width += add;
+  x += add;
   let paths = buildgridpaths(queryobj.stage, method.hunts, queryobj.gridcolors);
   //console.log(paths);
   drawgridsvg(rowArray, paths, width, x);
+}
+
+//adjust in case of displaying place notation
+function adjustwidth() {
+  let add = 0;
+  if (queryobj.pn && queryobj.quantity != "touch") {
+    let max = Math.max(...method.plainPN.filter(e => e != "x").map(e => e.length));
+    if (max > 3) {
+      add = (max-3)*9;
+    }
+  }
+  return add;
 }
 
 function drawgrid(pbs) {
   
   let width = rowArray[0].bells.length*16 + 38;
   let x = 40;
+  let add = adjustwidth();
+  width += add;
+  x += add;
   
   let blue;
   if (queryobj.blueBell === "auto") {
     let n = queryobj.describe ? 1 : 2;
     blue = chooseworking(n);
     blueBell = blue[0];
+  } else if (queryobj.blueBell.includes("-")) {
+    blue = queryobj.blueBell.split("-").map(s => Number(s));
   } else {
+    blueBell = Number(queryobj.blueBell);
+    //gridhandbellpair
     blue = [blueBell];
   }
   
   let paths = buildpaths2(blue);
   
-  if (queryobj.describe) {
+  if (queryobj.describe && blueBell) {
     let working = !method.hunts.includes(blueBell);
     describenew(rowArray, blueBell, stage, method.hunts, pbs && working);
   }
@@ -1439,6 +1477,7 @@ function drawgrid(pbs) {
   }
 }
 
+let shadebackstrokes = false;
 function drawgridsvg(arr, paths, width, x) {
   let xinc = 16;
   let yinc = 20;
@@ -1446,9 +1485,17 @@ function drawgridsvg(arr, paths, width, x) {
     yinc = 12;
   }
   let height = arr.length * yinc;
-  let gridwidth = (arr.some(r => r.method) || arr[0].description) ? width+500 : width;
+  let gridwidth = (arr.some(r => r.method) || arr[0].description) ? width+500 : width+100;
   $("#container").append('<div class="grid"></div>');
   let grid = svg.svg($("div.grid:last-child"), null, null, gridwidth, height, {class: "grid", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink"});
+
+  if (shadebackstrokes && gridtype === "gridgrid") {
+    let group = svg.group(grid, {fill: "#eeeeee"});
+    for (let i = 0; i < arr.length; i+=2) {
+      let y = 1+i*yinc;
+      svg.rect(group, x-2, y, width-x+2, 10);
+    }
+  }
   
   //draw numbers
   if (queryobj.numbers) {
@@ -1458,6 +1505,32 @@ function drawgridsvg(arr, paths, width, x) {
   for (let i = 0; i < paths.length; i++) {
     drawPath(arr, paths[i], x+5, grid, yinc);
   }
+
+  //draw place notation
+  if (queryobj.pn && arr[0].rowNum < method.leadLength && queryobj.quantity != "touch") {
+    let points = checkpalindrome(method.plainPN);
+    let top = yinc + (yinc === 12 ? 3 : 4);
+    let style = "font-family: Verdana, sans-serif; fill: #000; font-size: ";
+    style += gridtype === "gridline" ? "12px;" : "8px;";
+    let pngroup = svg.group(grid, {style: style});
+    let i = arr[0].rowNum;
+    let j = 0;
+    while (i < method.leadLength && j < arr.length) {
+      let pn = convertpna(method.plainPN[i]);
+      let color;
+      if (points && (points[0] === 0 || points[1] === method.leadLength-1)) {
+        let change = points[0] === 0 ? points[1] : i === method.leadLength-1 ? method.leadLength : points[0];
+        if (i > change) {
+          color = {fill: "#999999"};
+        }
+      }
+      let text = svg.text(pngroup, 5, top+j*yinc, pn);
+      if (color) {
+        $(text).attr(color);
+      }
+      i++, j++;
+    }
+  }
   
   //draw LH lines
   //indicate calls
@@ -1465,6 +1538,11 @@ function drawgridsvg(arr, paths, width, x) {
   let lines = svg.group(grid, {style: "stroke: #111; stroke-width:1;"});
   svg.line(lines, x-2, yinc, width, yinc);
   let stedman = arr.find(r => r.name === "new six");
+  let filtered = paths.filter(o => o.color != "red");
+  if (filtered.length && !queryobj.describe && !stedman && gridtype === "gridline") {
+    drawplacebells(width+20, yinc-6, filtered, arr[0].bells);
+  }
+  
   for (let i = 1; i < arr.length; i++) {
     let y = arr[i].rowNum * yinc;
     if (arr[i].name === "new six") {
@@ -1472,6 +1550,9 @@ function drawgridsvg(arr, paths, width, x) {
     }
     if (arr[i].name === "leadhead" && !stedman) {
       svg.line(lines, x-2, y, width, y);
+      if (filtered.length && !queryobj.describe && gridtype === "gridline") {
+        drawplacebells(width+20, y-6, filtered, arr[i].bells);
+      }
     }
     if (["b", "s"].includes(arr[i].type)) {
       let t = arr[i].type === "b" ? "-" : "s";
@@ -1488,6 +1569,16 @@ function drawgridsvg(arr, paths, width, x) {
     drawdescript(text, x);
   }
   
+}
+
+
+function drawplacebells(x, y, paths, row) {
+  for (let i = 0; i < paths.length; i++) {
+    let num = paths[i].bell;
+    let place = row.indexOf(num);
+    svg.circle($("#placebell"+num), x+i*12, y-4, 6);
+    svg.text($("#placebelltext"+num), x+i*12, y, places[place]);
+  }
 }
 
 function drawdescript(group, x) {
@@ -2081,6 +2172,7 @@ function checkpalindrome(pn) {
   let symmetrical;
   let mod = pn.length;
   let point = pn.length-1;
+  let other = point - Math.floor(mod/2);
   while (!symmetrical && count < pn.length-1) {
     let ii = [];
     let jj = [];
@@ -2090,9 +2182,11 @@ function checkpalindrome(pn) {
     }
     symmetrical = ii.every((n,i) => strarr[n] === strarr[jj[i]]);
     point--;
+    other--;
     count++;
   }
-  return symmetrical ? point : -1;
+  let points = [other+1, point+1];
+  return symmetrical ? points : null;
 }
 
 function findbypn(pn, pnstage) {
