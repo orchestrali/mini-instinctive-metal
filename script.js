@@ -1499,7 +1499,7 @@ function drawgridsvg(arr, paths, width, x) {
 
   //draw place notation
   if (queryobj.pn && arr[0].rowNum < method.leadLength && queryobj.quantity != "touch") {
-    console.log(checkpalindrome(method.plainPN));
+    let points = checkpalindrome(method.plainPN);
     let style = "font-family: Verdana, sans-serif; fill: #000; font-size: ";
     style += gridtype === "gridline" ? "12px;" : "8px;";
     let pngroup = svg.group(grid, {style: style});
@@ -1507,7 +1507,17 @@ function drawgridsvg(arr, paths, width, x) {
     let j = 0;
     while (i < method.leadLength && j < arr.length) {
       let pn = convertpna(method.plainPN[i]);
-      svg.text(pngroup, 5, yinc+4+j*yinc, pn);
+      let color;
+      if (points && (points[0] === 0 || points[1] === method.leadLength-1)) {
+        let change = points[0] === 0 ? points[1]+1 : i === method.leadLength ? method.leadLength : points[0]+1;
+        if (i > change) {
+          color = {fill: "#999999"};
+        }
+      }
+      let text = svg.text(pngroup, 5, yinc+4+j*yinc, pn);
+      if (color) {
+        $(text).attr(color);
+      }
       i++, j++;
     }
   }
@@ -2152,6 +2162,7 @@ function checkpalindrome(pn) {
   let symmetrical;
   let mod = pn.length;
   let point = pn.length-1;
+  let other = point - Math.floor(mod/2);
   while (!symmetrical && count < pn.length-1) {
     let ii = [];
     let jj = [];
@@ -2161,9 +2172,11 @@ function checkpalindrome(pn) {
     }
     symmetrical = ii.every((n,i) => strarr[n] === strarr[jj[i]]);
     point--;
+    other--;
     count++;
   }
-  return symmetrical ? point : -1;
+  let points = [other+1, point+1];
+  return symmetrical ? points : null;
 }
 
 function findbypn(pn, pnstage) {
