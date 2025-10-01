@@ -36,7 +36,7 @@ const selects = ["stage", "methodClass", "blueBell", "keysig", "actTenor"];
 const texts = ["methodName", "placeNotation"];
 const numtexts = ["tenors"];
 const radios = ["lookup", "type", "gridtype", "gridcolors", "timesig"];
-const checked = ["numbers", "describe", "gap", "includeTime", "onlyblue", "mobile"];
+const checked = ["numbers", "describe", "pn", "gap", "includeTime", "onlyblue", "mobile"];
 const formkeys = {
   selects: selects,
   texts: texts,
@@ -49,11 +49,11 @@ const oldformkeys = {
   texts: ["bobPlaceNot", "singlePlaceNot", "otherLeadhead", "comp", "huntColor", "blueBellc", "blueGroup1c", "blueGroup2c", "bell1c"],
   numbers: ["complibid", "callLoc", "numrounds", "hours", "minutes"],
   radios: ["callType", "leadhead", "quantity", "touchType", "sounds"],
-  checks: ["pn", "pagination", "huntbells", "rowzero", "keepscore", "drawLH", "tutorial", "player", "highlight"]
+  checks: ["pagination", "huntbells", "rowzero", "keepscore", "drawLH", "tutorial", "player", "highlight"]
 };
 const keysforall = ["stage", "lookup", "methodClass", "methodName", "placeNotation", "type"];
 const typekeys = {
-  grid: ["gridtype", "numbers", "blueBell", "describe", "gridcolors"],
+  grid: ["gridtype", "pn", "numbers", "blueBell", "describe", "gridcolors"],
   staff: ["blueBell", "tenors", "gap", "includeTime", "timesig", "keysig", "actTenor", "onlyblue", "mobile"]
 };
 
@@ -1411,15 +1411,33 @@ function buildpaths2(bb) {
 function drawgridgrid() {
   let width = rowArray[0].bells.length*16 + 38;
   let x = 40;
+  let add = adjustwidth();
+  width += add;
+  x += add;
   let paths = buildgridpaths(queryobj.stage, method.hunts, queryobj.gridcolors);
   //console.log(paths);
   drawgridsvg(rowArray, paths, width, x);
+}
+
+//adjust in case of displaying place notation
+function adjustwidth() {
+  let add = 0;
+  if (queryobj.pn && queryobj.quantity != "touch") {
+    let max = Math.max(...method.plainPN.filter(e => e != "x").map(e => e.length));
+    if (max > 3) {
+      add = (max-3)*9;
+    }
+  }
+  return add;
 }
 
 function drawgrid(pbs) {
   
   let width = rowArray[0].bells.length*16 + 38;
   let x = 40;
+  let add = adjustwidth();
+  width += add;
+  x += add;
   
   let blue;
   if (queryobj.blueBell === "auto") {
@@ -1477,6 +1495,19 @@ function drawgridsvg(arr, paths, width, x) {
   //draw lines
   for (let i = 0; i < paths.length; i++) {
     drawPath(arr, paths[i], x+5, grid, yinc);
+  }
+
+  //draw place notation
+  if (queryobj.pn && arr[0].rowNum < method.leadLength && queryobj.quantity != "touch") {
+    console.log(checkpalindrome(method.plainPN));
+    let pngroup = svg.group(grid, {style: "font-family: Verdana, sans-serif; font-size: 12px; fill: #000;"});
+    let i = arr[0].rowNum;
+    let j = 0;
+    while (i < method.leadLength && j < arr.length) {
+      let pn = convertpna(method.plainPN[i]);
+      svg.text(pngroup, 5, yinc+4+j*yinc, pn);
+      i++, j++;
+    }
   }
   
   //draw LH lines
