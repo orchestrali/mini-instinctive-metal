@@ -1500,7 +1500,9 @@ function drawgridsvg(arr, paths, width, x) {
   //draw place notation
   if (queryobj.pn && arr[0].rowNum < method.leadLength && queryobj.quantity != "touch") {
     console.log(checkpalindrome(method.plainPN));
-    let pngroup = svg.group(grid, {style: "font-family: Verdana, sans-serif; font-size: 12px; fill: #000;"});
+    let style = "font-family: Verdana, sans-serif; fill: #000; font-size: ";
+    style += gridtype === "gridline" ? "12px;" : "8px;";
+    let pngroup = svg.group(grid, {style: style});
     let i = arr[0].rowNum;
     let j = 0;
     while (i < method.leadLength && j < arr.length) {
@@ -1517,7 +1519,7 @@ function drawgridsvg(arr, paths, width, x) {
   svg.line(lines, x-2, yinc, width, yinc);
   let stedman = arr.find(r => r.name === "new six");
   let filtered = paths.filter(o => o.color != "red");
-  if (filtered.length && !queryobj.describe && !stedman) {
+  if (filtered.length && !queryobj.describe && !stedman && gridtype === "gridline") {
     drawplacebells(width+20, yinc-6, filtered, arr[0].bells);
   }
   
