@@ -1,0 +1,182 @@
+/* a minimalist set of CSS resets */
+
+/* default to border-box */
+html {
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+/* adjust typography defaults */
+body {
+  margin: 1rem;
+  font-family: sans-serif;
+  line-height: 1.5;
+}
+
+/* images and videos max out at full width */
+img,
+video {
+  height: auto;
+  max-width: 100%;
+}
+
+button {
+  padding: 5px;
+  font-family: Georgia;
+  font-size: 16px;
+  margin: 5px;
+}
+button:hover {
+  cursor: pointer;
+}
+
+label {
+  display: block;
+}
+
+ul {
+  list-style-type: none;
+}
+
+.disabled {
+  border: 1px solid gray;
+  color: lightgray;
+}
+
+#startbutton {
+  padding: 20px;
+  font-size: 20px;
+}
+
+#container {
+  display: none;
+}
+
+#pull-line, #sound-line {
+  position: relative;
+  width: 0;
+  height: 4px;
+  transition: width 4.22s linear;
+}
+#pull-line {
+  background-color: skyblue;
+}
+#sound-line {
+  background-color: navy;
+}
+
+.marker {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: none;
+  top: -6px;
+}
+.pull.marker {
+  background-color: skyblue;
+}
+.sound.marker {
+  background-color: navy;
+}
+.sound.marker:nth-child(6n-5) {
+  background-color: skyblue;
+}
+.sound.marker.mymarker {
+  background-color: red;
+}
+
+div#bells {
+  overflow: hidden;
+  width: 600px;
+  height: 600px;
+  -webkit-perspective: 400px;
+	-webkit-perspective-origin: 63% 40%;
+  position: relative;
+}
+
+#floor {
+  -webkit-transform-style: preserve-3d;
+  position: absolute;
+  width: 640px;
+  height: 640px;
+  border-radius: 320px;
+  border: 2px solid black;
+  top: 100px;
+  left: 0px;
+  transform: translateZ(-140px) rotateX(90deg);
+}
+
+div.chute {
+  -webkit-transform-style: preserve-3d;
+  position: absolute;
+	margin: 10px;
+	width: 60px;
+	height: 300px;
+	-webkit-transition: 0.6s linear;
+}
+
+.rug {
+  -webkit-transform-style: preserve-3d;
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background-color: navy;
+  top: 400px;
+  transform: rotateX(90deg);
+}
+
+.bellnum {
+  position: absolute;
+  top: 100px;
+}
+
+#mybellnum {
+  position: absolute;
+  font-size: 18pt;
+  left: 240px;
+  top: 100px;
+}
+
+#instruct {
+  position: absolute;
+  top: 100px;
+  right: 240px;
+}
+
+#feedback {
+  position: absolute;
+  top: 200px;
+  right: 240px;
+  opacity: 0;
+  background-color: white;
+  font-size: 14pt;
+  transition: opacity 0.2s ease-in-out;
+}
+
+#instructions {
+  max-width: 600px;
+  background-color: white;
+  
+  margin-left: 10px;
+  margin-bottom: 20px;
+  padding: 10px;
+  border: 1px solid black;
+  border-radius: 5px;
+}
+
+#callcontainer {
+  position: absolute;
+  font-size: 20pt;
+  top: 60px;
+  width: 600px;
+  text-align: center;
+  z-index: 2;
+  background-color: white;
+  opacity: 0.7;
+}
