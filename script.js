@@ -212,6 +212,7 @@ function checkqueryparams(obj, oldobj) {
       
     } else if (obj.methodClass && obj.methodName) {
       obj.lookup = "name";
+      obj.methodName = splittitle(obj.methodName);
     } else {
       //not enough info
       problem = "not enough info";
@@ -1951,6 +1952,18 @@ function findhunts(pn, pnstage) {
     }
   }
   return hunts;
+}
+
+//if the title ends with a stagename, remove that
+function splittitle(title) {
+  let res = {};
+  let words = title.split(" ");
+  let last = words.pop();
+  let stagename;
+  if (stages.find(o => o.name === last)) {
+    stagename = last;
+  }
+  return stagename ? words.join(" ") : title;
 }
 
 function buildpborder(pn, pnstage) {
