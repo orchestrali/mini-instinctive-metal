@@ -911,7 +911,7 @@ function methodnamekeyup(event) {
         }
         //enter key
       } else if (event.which == 13) {
-        $("#methodName").val($("li.selected").text());
+        $("#methodName").val($("#methodList li.selected").text());
 
         $("#methodList li").hide();
       }
