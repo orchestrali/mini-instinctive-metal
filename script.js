@@ -1612,6 +1612,7 @@ function treblesgoing() {
     ringingplace = -2;
   }
   //actually go
+  requestAnimationFrame(animater);
   if (rownum === 0 && mybells.includes(1) && !simopts.standbehind) {
     waiting = true;
   } else {
@@ -1619,7 +1620,7 @@ function treblesgoing() {
     waiting = false;
     scheduler();
   }
-  requestAnimationFrame(animater);
+  
 }
 
 //advance a place in the scheduling
@@ -1668,11 +1669,12 @@ function scheduleRing(p, t) {
     let mine = bell ? mybells.includes(arr[0]) : null;
 
     if (bell && (!mine || simopts.standbehind)) {
-      console.log("scheduling bell "+arr[0]);
+      //console.log("scheduling bell "+arr[0]);
       pull({bell: arr[0], stroke: ringingstroke}, t);
     }
     //clear "treble's going"
     if (rownum === 0 && p === 0) {
+      console.log("first bell");
       callqueue.push({call: "", time: t, rownum: rownum});
     }
     //schedule first call
@@ -1685,6 +1687,10 @@ function scheduleRing(p, t) {
     } else {
       nextPlace();
     }
+  } else {
+    let call = p === -2 ? "Look to" : "Treble's going";
+    callqueue.push({call: call, time: t, rownum: rownum});
+    nextPlace();
   }
 }
 
@@ -1718,6 +1724,7 @@ function animater() {
 }
 
 function thatisall() {
+  console.log("ending play");
   playing = false;
   waiting = false;
   clearTimeout(timeout);
