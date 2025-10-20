@@ -1457,6 +1457,7 @@ function routersimulator(title) {
   //connect sounds to ropes
   buildtower(blueBell, numbells);
   //assign bell
+  $("#sally6,#tail6").on("click", emitring);
   //which things need resetting?
   $("#simulatorcontainer").show();
 }
@@ -1667,6 +1668,7 @@ function scheduleRing(p, t) {
     let mine = bell ? mybells.includes(arr[0]) : null;
 
     if (bell && (!mine || simopts.standbehind)) {
+      console.log("scheduling bell "+arr[0]);
       pull({bell: arr[0], stroke: ringingstroke}, t);
     }
     //clear "treble's going"
@@ -1727,6 +1729,22 @@ function thatisall() {
 
 
 /* ***** SIMULATOR USE ***** */
+
+//emit ring from a click
+function emitring(e) {
+  let num = this.id.startsWith("sally") ? Number(this.id.slice(5)) : Number(this.id.slice(4));
+  let bell = currentbells.find(b => b.num === num);
+  let o = {bell: bell.num};
+  if ((this.id.startsWith("sally") || this.id.startsWith("hand")) && bell.stroke === 1) {
+    o.stroke = 1;
+
+  } else if ((this.id.startsWith("tail") || this.id.startsWith("back")) && bell.stroke === -1) {
+    o.stroke = -1;
+  }
+
+  pull(o);
+}
+
 
 //ring a bell
 //obj has: bell (number), stroke (1 or -1)
