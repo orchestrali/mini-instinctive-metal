@@ -1614,6 +1614,7 @@ function treblesgoing() {
   //actually go
   requestAnimationFrame(animater);
   if (rownum === 0 && mybells.includes(1) && !simopts.standbehind) {
+    console.log("waiting in treblesgoing");
     waiting = true;
   } else {
     console.log("starting");
@@ -1636,6 +1637,7 @@ function nextPlace() {
   }
   //end of row
   if (ringingplace === numbells) {
+    console.log("end of row "+rownum);
     if (ringingstroke === -1) {
       nextBellTime += delay*simopts.handgap + .23*duration; //add handstroke gap
     } else {
@@ -1684,6 +1686,7 @@ function scheduleRing(p, t) {
     //wait or move to next place
     if ((mine && !simopts.standbehind) && simopts.waitforgaps && (!arr || !arr[1])) {
       waiting = t;
+      console.log("waiting in schedulering");
     } else {
       nextPlace();
     }
