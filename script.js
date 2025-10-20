@@ -1688,7 +1688,7 @@ function scheduleRing(p, t) {
 
 function scheduler() {
   while (nextBellTime < audioCtx.currentTime + schedule && rowArray[rownum] && !waiting) {
-    scheduleRing(place, nextBellTime);
+    scheduleRing(ringingplace, nextBellTime);
   }
   !waiting && rowArray[rownum] ? timeout = setTimeout(scheduler, lookahead): clearTimeout(timeout);
 }
