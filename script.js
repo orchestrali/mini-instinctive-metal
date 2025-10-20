@@ -78,6 +78,44 @@ var rowArray;
 //individual bell (number) for gridline with describe; may be array otherwise
 var blueBell;
 
+//simulator items
+//objects with sounds and other info
+var bells = [
+  {bell: "F4",type: "tower"},{bell: "G4",type: "tower"},{bell: "A4",type: "tower"},{bell: "Bf4",type: "tower"},{bell: "C5",type: "tower"},{bell: "D5",type: "tower"},{bell: "E5",type: "tower"},{bell: "F5",type: "tower"},{bell: "G5",type: "tower"},{bell: "A5",type: "tower"},{bell: "Bf5",type: "tower"},{bell: "C6",type: "tower"}
+];
+//holder for current sounds
+var currentbells = [];
+//audio setup
+var audioCtx;
+var gainNode;
+//all the options
+var simopts = {
+  zoom: 0,
+  volume: 0.75,
+  duration: 1.3,
+  hours: 3,
+  minutes: 0,
+  handgap: 1,
+  roundsrows: 2,
+  stopatrounds: true,
+  nthrounds: 1,
+  waitforgaps: true,
+  solidme: false,
+  solidtreble: false,
+  cosallies: false,
+  highlightunder: false,
+  fadeabove: false,
+  displayplace: false,
+  placebells: false,
+  standbehind: false,
+  melouder: false,
+  instructions: false,
+  feedback: false
+};
+
+var mybells = [];
+var mbells = [];
+
 
 
 $(function(){
@@ -91,6 +129,11 @@ $(function(){
     svg = o;
     svg.configure({xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink", width: 0, height: 0});
   }});
+
+  //prevent typing in inputs from triggering a bell ring
+  $("body").on("keydown", "input", function(e) {
+    e.stopPropagation();
+  });
 
   //nav toggle
   $("#nav-options").click(function() {
@@ -145,10 +188,50 @@ function getlists() {
         bigmethodarr = arr;
         console.log("lists retrieved");
         getqueryparams();
+        //set up sounds for simulator already
+        for (let i = 0; i < bells.length; i++) {
+          bells[i].url = "/sounds/" + bells[i].bell + ".wav";
+        }
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        gainNode = audioCtx.createGain();
+        gainNode.gain.value = 0.75;
+        setupSample(0);
       });
       
     });
   });
+}
+
+//fetch a sound file
+async function getFile2(audioContext, filepath) {
+  try {
+    const response = await fetch(filepath);
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return arrayBuffer;
+  } catch (error) {
+    console.log(error.message);
+    //alert("Sorry, there has been a problem accessing the sound files.");
+    return null;
+  }
+}
+
+//create sound buffers for all the bells
+async function setupSample(i) {
+  let arrayBuffer = await getFile2(audioCtx, bells[i].url);
+  if (arrayBuffer) {
+    audioCtx.decodeAudioData(arrayBuffer, (buffer) => {
+      bells[i].buffer = buffer;
+      if (i < bells.length-1) {
+        i++;
+        setupSample(i);
+      } else {
+        console.log("finished getting sounds");
+      }
+    }, (e) => { console.log(e) });
+  }
 }
 
 function getqueryparams() {
@@ -1112,7 +1195,10 @@ function getChar(char, dir) {
 
 //click submit
 function submitform() {
-  $(".results").remove();
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  $(".results,.chute").remove();
   window.location.hash = "";
   method = null;
   blueBell = null;
@@ -1155,6 +1241,7 @@ function submitform() {
   
 }
 
+//two steps: build row array, then display it
 function resultsrouter(obj) {
   //console.log(obj);
   $("#container").contents().remove();
@@ -1183,6 +1270,9 @@ function resultsrouter(obj) {
       case "staff":
         drawstaff(title);
         break;
+      case "simulator":
+        routersimulator(title);
+        break;
     }
     
     window.location.hash = 'svgs';
@@ -1202,6 +1292,7 @@ function resultsrouter(obj) {
   }
 }
 
+//step two: display
 function routergrid(obj, title) {
   //different grid display options
   $("#container").append("<h1>"+title+"</h1>");
@@ -1219,10 +1310,9 @@ function routergrid(obj, title) {
       drawgridgrid();
       break;
   }
-  
-  
 }
 
+//step one: build rows
 function routermethod(obj) {
   method = findmethod(obj);
   let title;
@@ -1237,6 +1327,7 @@ function routermethod(obj) {
   return title;
 }
 
+//step one: build rows
 function routerpn(obj) {
   let res = parsePN(obj.placeNotation, obj.stage);
   let title;
@@ -1305,6 +1396,185 @@ function buildrowarr() {
   }
   numbells = rowArray[0].bells.length;
 }
+
+//should probably do something with title?
+function routersimulator(title) {
+  //build row array in needed format
+  //actually just modify the row array I'm already building
+  rowArray.forEach(o => {
+    o.row = o.bells.map(n => [n]);
+  });
+  //set of sounds/bell objects to use
+  buildcurrentbells("tower", numbells);
+  //set "mybell" if auto?
+  if (!queryobj.blueBell || queryobj.blueBell === "auto") {
+    blueBell = chooseworking(1);
+  } else {
+    blueBell = Number(queryobj.blueBell);
+  }
+  //add ropes
+  //position ropes
+  //connect sounds to ropes
+  buildtower(blueBell, numbells);
+  //assign bell
+  //which things need resetting?
+  $("#simulatorcontainer").show();
+}
+
+
+
+
+/* ***** SIMULATOR SETUP ***** */
+
+
+
+function buildcurrentbells(type, n) {
+  currentbells = [];
+  let filter = bells.filter(o => o.type === type);
+  for (let i = 0; i < n; i++) {
+    let model = filter[i];
+    let o = {
+      num: n-i,
+      buffer: model.buffer,
+      stroke: 1
+    };
+    currentbells.push(o);
+  }
+}
+
+//set up all the ropes
+//start is the center/user rope, n is numbells
+function buildtower(start, n) {
+  //start with closest rope and go clockwise
+  for (let i = 0; i < n; i++) {
+    let num = start + i;
+    if (num > n) num -= n;
+    let j = n - num;
+    
+    addrope(num);
+    position(i,num);
+    //attach sounds to animation
+    let handstroke = document.getElementById("hand8b"+num);
+    handstroke.addEventListener("beginEvent", ring);
+    let backstroke = document.getElementById("back11b"+num);
+    backstroke.addEventListener("beginEvent", ring);
+  }
+}
+
+//copied from bellmaster, some differences
+function position(i, num) {
+  let radius = 270; //update this for non-div by 4 stages
+  let zrad = 270; //diff ????
+  let angle = 2*Math.PI/numbells*i;
+  //adjustment here for user ringing two bells
+  let left = radius - radius * Math.sin(angle);
+  let z = Math.cos(angle*-1) * zrad - zrad/2; //diff
+  let bell = currentbells.find(b => b.num === num);
+  bell.left = left;
+  bell.z = z;
+  $("#chute"+num).css({"left": left+"px", transform: "translateZ("+z+"px)"});
+}
+
+function addrope(num) {
+  let div = `<div class="chute" id="chute${num}">
+    <span class="bellnum">${num}</span>
+    <span class="placebell"></span>
+  </div>`;
+  //then append the div
+  $("#bells").append(div);
+  let rope = svg.svg($("#chute"+num), null, null, 60, 500, {id: "rope"+num, class: "rope", viewBox: "0 0 60 500", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink"});
+  let defs = svg.defs(rope);
+  let pattern = svg.pattern(defs, "sallypattern", 0, 0, 1, 0.13);
+  let patternpaths = [{stroke: "blue", d: "M -2 4 l 5 -5"}, {stroke: "red", d: "M -2 8 l 9 -9"}, {stroke: "skyblue", d: "M -2 12 l 12 -12"}, {stroke: "blue", d: "M 1 13 l 9 -9"}, {stroke: "red", d: "M 5 13 l 5 -5"}];
+  patternpaths.forEach(o => {
+    svg.path(pattern, o.d, {"stroke-width": 3.2, stroke: o.stroke});
+  });
+
+  svg.rect(rope, 30, -90, 3, 260, {fill: "#dddddd", "stroke-width": 1, stroke: "#aaaaaa"});
+  svg.rect(rope, 30, 255, 3, 60, {fill: "#dddddd", "stroke-width": 1, stroke: "#aaaaaa"});
+
+  let hand = svg.svg(rope, null, null, null, null, {class: "hand", id: "hand"+num});
+  svg.rect(hand, 0, 170, 29, 90, {fill: "transparent"});
+  svg.rect(hand, 35, 170, 29, 90, {fill: "transparent"});
+  svg.rect(hand, 27, 170, 9, 90, 7, null, {fill: "url(#sallypattern)", class: "sally", id: "sally"+num});
+
+  let back = svg.svg(rope, null, null, null, null, {class: "back", id: "back"+num});
+  svg.rect(back, 0, 315, 29, 61, {fill: "transparent"});
+  svg.rect(back, 33, 315, 29, 61, {fill: "transparent"});
+  let tail = svg.svg(back, null, null, null, null, {class: "tail", id: "tail"+num});
+  svg.rect(tail, 30, 315, 5, 61, {fill: "white"});
+  svg.path(tail, "M31.5,310 v30 l2,2 v30 l-1,2 h-2 l-1,-2 v-28 l4,-5 v-20 l-6,-3", {"stroke-width": 3, stroke: "#dddddd", fill: "none"});
+  svg.path(tail, "M30,290 v50 l2,2 v30 l-1,2 l-1,-2 v-28 l5,-5 v-20 l-6,-3", {stroke: "#aaaaaa", "stroke-width": 1, fill: "none"});
+  svg.path(tail, "M33,290 v50 l2,2 v30 l-2,3 h-4 l-2,-2 v-28 l6,-7 v-17 l-6,-3 l1.2,-2", {stroke: "#aaaaaa", "stroke-width": 1, fill: "none"});
+  svg.rect(tail, 30.5, 315, 2, 9, {fill: "#dddddd"});
+  svg.path(tail, "M31,342 l3,-3", {stroke: "#dddddd", fill: "none", "stroke-width": 1});
+
+  let yy = [0, -6.2, -17, -37.22, -55.2, -37.11, -9.74, 23, 56.35, 89.125, 116.15, 135.04, 149.42, 159.65, 170.1, 173.7];
+  ["hand", "back"].forEach(s => {
+    for (let i = 0; i < yy.length-1; i++) {
+      let j = s === "hand" ? i+1 : i;
+      let y = s === "hand" ? yy[j] : yy[yy.length-i-2] ;
+      let dur = setdur(s,i);
+      let begin = i === 0 ? "indefinite" : s + (j-1) +"b"+num + ".endEvent";
+      svg.other(rope, "animate", {id: s+j+"b"+num, attributeName: "viewBox", to: "0 "+y+" 60 500", dur: dur, begin: begin, fill: "freeze"});
+    }
+  });
+}
+
+//calculate duration for a portion of the bellrope animation
+function setdur(s,i) {
+  let n = simopts.duration/21;
+  let dur = [0,14].includes(i) ? 3*n : [1,13].includes(i) ? 2*n : n;
+  return dur;
+}
+
+
+
+
+/* ***** SIMULATOR USE ***** */
+
+
+//given animation event find the buffer to play
+function ring(e) {
+  let bellnum = Number(this.id.startsWith("hand") ? this.id.slice(6) : this.id.slice(7));
+  let bell = currentbells.find(b => b.num === bellnum);
+  if (bell) {
+    let pan = [];
+    let x = (bell.left - 270)/135;
+    let z = (bell.z)/100;
+    pan.push(x, 10, z);
+    if (simopts.melouder) {
+      let multiplier = mybells.includes(bellnum) ? 1.35 : 0.75;
+      gainNode.gain.value = simopts.volume * multiplier;
+    }
+    let buffer = bell.buffer;
+    playSample(audioCtx, buffer, pan);
+  }
+}
+
+//play sound
+function playSample(audioContext, audioBuffer, pan) {
+  //console.log("playSample called");
+  //console.log(audioBuffer);
+  const sampleSource = audioContext.createBufferSource();
+  sampleSource.buffer = audioBuffer;
+  const panner = audioContext.createPanner();
+  panner.panningModel = 'equalpower';
+  if (pan) {
+    panner.setPosition(...pan);
+    sampleSource.connect(panner).connect(gainNode).connect(audioContext.destination);
+  } else {
+    sampleSource.connect(gainNode).connect(audioContext.destination);
+  }
+  //sampleSource.connect(audioContext.destination);
+  sampleSource.start();
+  return sampleSource;
+}
+
+
+
+
+/* **** GRID(?) DISPLAY STUFF **** */
 
 //draw stuff
 function drawElement(label, args) {
@@ -1432,8 +1702,8 @@ function adjustwidth() {
   return add;
 }
 
+
 function drawgrid(pbs) {
-  
   let width = rowArray[0].bells.length*16 + 38;
   let x = 40;
   let add = adjustwidth();
@@ -1478,6 +1748,7 @@ function drawgrid(pbs) {
   }
 }
 
+//big display function
 let shadebackstrokes = false;
 function drawgridsvg(arr, paths, width, x) {
   let xinc = 16;
@@ -1599,7 +1870,10 @@ function drawdescript(group, x) {
   });
 }
 
-//drawing staff things
+
+
+
+/* ***** drawing staff things ***** */
 
 function drawstaff(title) {
   $("#container").append("<h1>"+title+"</h1>");
@@ -1910,7 +2184,11 @@ function drawnotes(rows, system, startx, blue) {
 }
 
 
-// BELLRINGING FUNCTIONS
+
+
+
+
+/* ***** BELLRINGING FUNCTIONS ***** */
 
 //given stage number, get its name
 function getStageName(stage) {
