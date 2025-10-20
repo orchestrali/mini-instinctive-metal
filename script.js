@@ -1457,7 +1457,7 @@ function routersimulator(title) {
   //connect sounds to ropes
   buildtower(blueBell, numbells);
   //assign bell
-  $("#sally6,#tail6").on("click", emitring);
+  //$("#sally6,#tail6").on("click", emitring);
   //which things need resetting?
   $("#simulatorcontainer").show();
 }
@@ -1639,9 +1639,9 @@ function nextPlace() {
   if (ringingplace === numbells) {
     console.log("end of row "+rownum);
     if (ringingstroke === -1) {
-      nextBellTime += delay*simopts.handgap + .23*duration; //add handstroke gap
+      nextBellTime += delay*simopts.handgap + .23*simopts.duration; //add handstroke gap
     } else {
-      nextBellTime -= .23*duration;
+      nextBellTime -= .23*simopts.duration;
     }
     ringingplace = 0;
     ringingstroke *= -1;
