@@ -1408,7 +1408,8 @@ function routersimulator(title) {
   buildcurrentbells("tower", numbells);
   //set "mybell" if auto?
   if (!queryobj.blueBell || queryobj.blueBell === "auto") {
-    blueBell = chooseworking(1);
+    let blue = chooseworking(1);
+    blueBell = blue[0];
   } else {
     blueBell = Number(queryobj.blueBell);
   }
