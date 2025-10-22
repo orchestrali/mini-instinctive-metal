@@ -95,7 +95,7 @@ var simopts = {
   duration: 1.3,
   hours: 3,
   minutes: 0,
-  handgap: 1,
+  handgap: 5,
   roundsrows: 2,
   stopatrounds: true,
   nthrounds: 1,
