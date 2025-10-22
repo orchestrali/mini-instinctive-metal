@@ -1878,6 +1878,7 @@ function showmarker(bell, stroke) {
   if (stroke === -1) p += numbells;
   if (p === 1) $("#sound-line").css("width", "660px");
   $(".sound.marker:nth-child("+p+")").show();
+  $("#soundtest").text(p.toString());
 }
 
 
