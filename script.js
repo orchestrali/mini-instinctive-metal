@@ -137,6 +137,7 @@ var thatsall;
 //for the visualization of striking
 //objects have: place (0-indexed!), rownum, time, mybell (boolean), diff
 var soundqueue = [];
+var soundrow = -1;
 
 var mybells = [];
 var mbells = [];
@@ -1438,7 +1439,7 @@ function routersimulator(title) {
   //need to add extra rounds row and go call
   if (rowArray[0].rowNum === 0) {
     let zero = rowArray[0];
-    let extra = {rowNum: -1, row: zero.row};
+    let extra = {rowNum: -1, row: zero.row, bells: zero.bells};
     let call = "Go "+(method.name && method.name.length ? method.name : "next time");
     extra.call = call;
     rowArray.unshift(extra);
@@ -1664,7 +1665,7 @@ function nextPlace() {
   }
   //end of row
   if (ringingplace === numbells) {
-    console.log("end of row "+rownum);
+    //console.log("end of row "+rownum);
     if (ringingstroke === -1) {
       nextBellTime += delay*simopts.handgap + .23*simopts.duration; //add handstroke gap
     } else {
@@ -1699,7 +1700,7 @@ function scheduleRing(p, t) {
 
     if (bell && (!mine || simopts.standbehind)) {
       //console.log("scheduling bell "+arr[0]);
-      pull({bell: arr[0], stroke: ringingstroke}, t);
+      pull({bell: arr[0], stroke: ringingstroke, place: p+1}, t);
     }
     //clear "treble's going"
     if (rownum === 0 && p === 0) {
@@ -1794,9 +1795,14 @@ function pull(obj, t) {
     if (bell && bell.stroke === obj.stroke) { //if strokes are consistent
       //stuff to do if it's my bell
 
+      //visuals test
+      if (obj.place === 1 && obj.stroke === 1) {
+        resetsoundline();
+        soundrow++;
+      }
       //actually pull the rope
       t ? document.getElementById(id).beginElementAt(t-now) : document.getElementById(id).beginElement();
-
+      
       bell.stroke = obj.stroke * -1;
     }
 
@@ -1809,9 +1815,13 @@ function pull(obj, t) {
 
 //given animation event find the buffer to play
 function ring(e) {
+  let stroke = this.id.startsWith("hand") ? 1 : -1;
   let bellnum = Number(this.id.startsWith("hand") ? this.id.slice(6) : this.id.slice(7));
   let bell = currentbells.find(b => b.num === bellnum);
   if (bell) {
+    if (playing) {
+      showmarker(bellnum, stroke);
+    }
     let pan = [];
     let x = (bell.left - 270)/135;
     let z = (bell.z)/100;
@@ -1852,6 +1862,14 @@ function resetsoundline() {
   let line = $("#sound-line").detach();
   line.css("width", "0");
   $("#visuals li:first-child").append(line);
+}
+
+function showmarker(bell, stroke) {
+  let row = rowArray[soundrow].bells;
+  let p = row.indexOf(bell)+1;
+  if (stroke === -1) p += numbells;
+  if (p === 1) $("#sound-line").css("width", "660px");
+  $(".sound.marker:nth-child("+p+")").show();
 }
 
 
