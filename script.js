@@ -136,6 +136,7 @@ var lastcallrow = 0;
 var thatsall;
 //for the visualization of striking
 //objects have: place (0-indexed!), rownum, time, mybell (boolean), diff
+//currently just: time, stroke; only for advancing the row
 var soundqueue = [];
 var soundrow = -1;
 
@@ -1748,6 +1749,11 @@ function animater() {
     lastcallrow = callrow;
   }
   //feedback stuff
+  if (soundqueue[0] && soundqueue[0].time < currentTime) {
+    if (soundqueue[0].stroke === 1) resetsoundline();
+    soundrow++;
+    soundqueue.shift();
+  }
 
   if (playing) {
     requestAnimationFrame(animater);
@@ -1797,9 +1803,10 @@ function pull(obj, t) {
 
       //visuals test
       if (obj.place === 1) {
-        if (obj.stroke === 1) resetsoundline();
-        soundrow++;
-        console.log(rowstring(rowArray[soundrow].bells));
+        soundqueue.push({time: t, stroke: obj.stroke});
+        //if (obj.stroke === 1) resetsoundline();
+        //soundrow++;
+        //console.log(rowstring(rowArray[soundrow].bells));
       }
       //actually pull the rope
       t ? document.getElementById(id).beginElementAt(t-now) : document.getElementById(id).beginElement();
