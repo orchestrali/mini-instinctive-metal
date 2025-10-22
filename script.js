@@ -1799,6 +1799,7 @@ function pull(obj, t) {
       if (obj.place === 1) {
         if (obj.stroke === 1) resetsoundline();
         soundrow++;
+        console.log(rowstring(rowArray[soundrow].bells));
       }
       //actually pull the rope
       t ? document.getElementById(id).beginElementAt(t-now) : document.getElementById(id).beginElement();
@@ -1856,7 +1857,7 @@ function playSample(audioContext, audioBuffer, pan) {
 
 //reset so it can start again
 function resetsoundline() {
-  $(".sound.marker").css("display", "none");
+  $(".sound.marker").hide();
   $(".sound.marker").removeClass("mymarker");
   positionmarkers();
   let line = $("#sound-line").detach();
