@@ -1796,8 +1796,8 @@ function pull(obj, t) {
       //stuff to do if it's my bell
 
       //visuals test
-      if (obj.place === 1 && obj.stroke === 1) {
-        resetsoundline();
+      if (obj.place === 1) {
+        if (obj.stroke === 1) resetsoundline();
         soundrow++;
       }
       //actually pull the rope
