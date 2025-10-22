@@ -138,7 +138,7 @@ var thatsall;
 //objects have: place (0-indexed!), rownum, time, mybell (boolean), diff
 //currently just: time, stroke; only for advancing the row
 var soundqueue = [];
-var soundrow = -1;
+var soundrow = 0;
 
 var mybells = [];
 var mbells = [];
