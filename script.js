@@ -95,7 +95,7 @@ var simopts = {
   duration: 1.3,
   hours: 3,
   minutes: 0,
-  handgap: 5,
+  handgap: 1,
   roundsrows: 2,
   stopatrounds: true,
   nthrounds: 1,
@@ -1750,8 +1750,8 @@ function animater() {
   }
   //feedback stuff
   if (soundqueue[0] && soundqueue[0].time < currentTime) {
-    if (soundqueue[0].stroke === 1) resetsoundline();
-    soundrow++;
+    //if (soundqueue[0].stroke === 1) resetsoundline();
+    //soundrow++;
     soundqueue.shift();
   }
 
@@ -1876,7 +1876,11 @@ function showmarker(bell, stroke) {
   let row = rowArray[soundrow].bells;
   let p = row.indexOf(bell)+1;
   if (stroke === -1) p += numbells;
-  if (p === 1) $("#sound-line").css("width", "660px");
+  if (p % numbells === 0) soundrow++;
+  if (p === 1) {
+    resetsoundline();
+    $("#sound-line").css("width", "660px");
+  }
   $(".sound.marker:nth-child("+p+")").show();
   $("#soundtest").text(p.toString());
 }
