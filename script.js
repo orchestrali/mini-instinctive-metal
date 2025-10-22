@@ -118,6 +118,7 @@ var speed = 2.3;
 var delay;
 //
 var playing = false;
+//zero-indexed
 var ringingplace = 0;
 var nextBellTime = 0.0;
 var ringingstroke = 1;
@@ -133,6 +134,9 @@ var callqueue = [];
 var lastcall = "";
 var lastcallrow = 0;
 var thatsall;
+//for the visualization of striking
+//objects have: place (0-indexed!), rownum, time, mybell (boolean), diff
+var soundqueue = [];
 
 var mybells = [];
 var mbells = [];
@@ -1440,6 +1444,9 @@ function routersimulator(title) {
     rowArray.unshift(extra);
   }
   firstcall = rowArray[0].call || null;
+  //markers
+  $(".sound.marker").remove();
+  placemarkers();
   //set of sounds/bell objects to use
   buildcurrentbells("tower", numbells);
   //set peal speed
@@ -1477,7 +1484,7 @@ function calcpealspeed() {
   $("#hours").val(h);
   $("#minutes").val(m);
   savesimspeed(h,m);
-  //$("#sound-line").css("transition", "width "+(speed*2-delay)+"s linear");
+  $("#sound-line").css("transition", "width "+(speed*2-delay)+"s linear");
 }
 
 function savesimspeed(h, m) {
@@ -1496,6 +1503,26 @@ function buildcurrentbells(type, n) {
       stroke: 1
     };
     currentbells.push(o);
+  }
+}
+
+//add markers
+function placemarkers() {
+  let left = -8;
+  for (let i = 0; i < numbells*2; i++) {
+    $("#sound-line").append(`<div class="sound marker" style="left: ${left}px;"></div>`);
+    if (i%numbells === 0) $(".sound.marker:last-child").addClass("first");
+    left += 660/(2*numbells-1);
+  }
+}
+
+//reset marker position when they're already there
+function positionmarkers() {
+  let left = -8;
+  for (let i = 1; i <= numbells; i++) {
+    $(".sound.marker:nth-child("+i+")").css("left", left+"px");
+    $(".sound.marker:nth-child("+(i+numbells)+")").css("left", (left+360)+"px");
+    left += 660/(2*numbells-1);
   }
 }
 
@@ -1815,6 +1842,16 @@ function playSample(audioContext, audioBuffer, pan) {
   //sampleSource.connect(audioContext.destination);
   sampleSource.start();
   return sampleSource;
+}
+
+//reset so it can start again
+function resetsoundline() {
+  $(".sound.marker").css("display", "none");
+  $(".sound.marker").removeClass("mymarker");
+  positionmarkers();
+  let line = $("#sound-line").detach();
+  line.css("width", "0");
+  $("#visuals li:first-child").append(line);
 }
 
 
