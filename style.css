@@ -329,7 +329,7 @@
     font-size: 20pt;
   }
 
-  #sound-line {
+  #sound-line1, #sound-line2 {
     position: relative;
     width: 0;
     height: 4px;
