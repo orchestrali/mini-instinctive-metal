@@ -135,10 +135,11 @@ var lastcall = "";
 var lastcallrow = 0;
 var thatsall;
 //for the visualization of striking
-//objects have: place (0-indexed!), rownum, time, mybell (boolean), diff
-//currently just: time, stroke; only for advancing the row
+//objects have: place in whole pull, time, mybell (boolean), diff
+//
 var soundqueue = [];
-var soundrow = 0;
+var soundrow = -1;
+var soundplace;
 
 var mybells = [];
 var mbells = [];
@@ -1668,6 +1669,8 @@ function nextPlace() {
   if (ringingplace === numbells) {
     //console.log("end of row "+rownum);
     if (ringingstroke === -1) {
+      //schedule soundline reset
+      soundqueue.push({place: numbells*2+1, time: nextBellTime + .23*simopts.duration + 8*simopts.duration/21});
       nextBellTime += delay*simopts.handgap + .23*simopts.duration; //add handstroke gap
     } else {
       nextBellTime -= .23*simopts.duration;
@@ -1699,9 +1702,22 @@ function scheduleRing(p, t) {
     let bell = arr && arr.length;
     let mine = bell ? mybells.includes(arr[0]) : null;
 
-    if (bell && (!mine || simopts.standbehind)) {
-      //console.log("scheduling bell "+arr[0]);
-      pull({bell: arr[0], stroke: ringingstroke, place: p+1}, t);
+    if (bell) {
+      if (!mine || simopts.standbehind) pull({bell: arr[0], stroke: ringingstroke}, t);
+      //put an object into soundqueue even if it's mybell
+      //first place of handstrokes needed to start the line
+      let o = {
+        place: p+1,
+        time: t,
+        mybell: mine
+      };
+      if (ringingstroke === -1) {
+        o.place += numbells;
+        o.time += 13*simopts.duration/21;
+      } else {
+        o.time += 8*simopts.duration/21;
+      }
+      soundqueue.push(o);
     }
     //clear "treble's going"
     if (rownum === 0 && p === 0) {
@@ -1749,10 +1765,26 @@ function animater() {
     lastcallrow = callrow;
   }
   //feedback stuff
+  let soundmark = soundplace;
   if (soundqueue[0] && soundqueue[0].time < currentTime) {
-    //if (soundqueue[0].stroke === 1) resetsoundline();
-    //soundrow++;
+    soundmark = soundqueue[0].place;
     soundqueue.shift();
+  }
+  if (soundmark != soundplace) {
+    //I wonder if I need soundrow at all now...
+    if ([1,numbells+1].includes(soundmark)) {
+      soundrow++;
+    }
+    if (soundmark > (numbells*2) ) {
+      resetsoundline();
+    } else {
+      $(".sound.marker:nth-child("+soundmark+")").show();
+    }
+    soundplace = soundmark;
+
+    if (soundmark === 1) {
+      $("#sound-line").css("width", "660px");
+    }
   }
 
   if (playing) {
@@ -1801,13 +1833,7 @@ function pull(obj, t) {
     if (bell && bell.stroke === obj.stroke) { //if strokes are consistent
       //stuff to do if it's my bell
 
-      //visuals test
-      if (obj.place === 1) {
-        soundqueue.push({time: t, stroke: obj.stroke});
-        //if (obj.stroke === 1) resetsoundline();
-        //soundrow++;
-        //console.log(rowstring(rowArray[soundrow].bells));
-      }
+      
       //actually pull the rope
       t ? document.getElementById(id).beginElementAt(t-now) : document.getElementById(id).beginElement();
       
@@ -1827,9 +1853,6 @@ function ring(e) {
   let bellnum = Number(this.id.startsWith("hand") ? this.id.slice(6) : this.id.slice(7));
   let bell = currentbells.find(b => b.num === bellnum);
   if (bell) {
-    if (playing) {
-      showmarker(bellnum, stroke);
-    }
     let pan = [];
     let x = (bell.left - 270)/135;
     let z = (bell.z)/100;
