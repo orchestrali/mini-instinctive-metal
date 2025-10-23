@@ -138,7 +138,7 @@ var thatsall;
 //objects have: place in whole pull, time, mybell (boolean), diff
 //
 var soundqueue = [];
-var soundrow = -1;
+var soundrow = 1;
 var soundplace;
 
 var mybells = [];
@@ -1513,7 +1513,7 @@ function buildcurrentbells(type, n) {
 function placemarkers() {
   let left = -8;
   for (let i = 0; i < numbells*2; i++) {
-    $("#sound-line").append(`<div class="sound marker" style="left: ${left}px;"></div>`);
+    $("#sound-line1,#sound-line2").append(`<div class="sound marker" style="left: ${left}px;"></div>`);
     if (i%numbells === 0) $(".sound.marker:last-child").addClass("first");
     left += 660/(2*numbells-1);
   }
@@ -1525,6 +1525,15 @@ function positionmarkers() {
   for (let i = 1; i <= numbells; i++) {
     $(".sound.marker:nth-child("+i+")").css("left", left+"px");
     $(".sound.marker:nth-child("+(i+numbells)+")").css("left", (left+360)+"px");
+    left += 660/(2*numbells-1);
+  }
+}
+//reset one line of markers
+function positionlinemarkers(id) {
+  let left = -8;
+  for (let i = 1; i <= numbells; i++) {
+    $(id+" .sound.marker:nth-child("+i+")").css("left", left+"px");
+    $(id+" .sound.marker:nth-child("+(i+numbells)+")").css("left", (left+360)+"px");
     left += 660/(2*numbells-1);
   }
 }
@@ -1669,9 +1678,10 @@ function nextPlace() {
   if (ringingplace === numbells) {
     //console.log("end of row "+rownum);
     if (ringingstroke === -1) {
-      //schedule soundline reset
-      soundqueue.push({place: numbells*2+1, time: nextBellTime + .23*simopts.duration + 8*simopts.duration/21});
       nextBellTime += delay*simopts.handgap + .23*simopts.duration; //add handstroke gap
+      //schedule soundline reset - sort of
+      soundqueue.push({place: numbells*2+1, time: nextBellTime});
+      
     } else {
       nextBellTime -= .23*simopts.duration;
     }
@@ -1771,19 +1781,18 @@ function animater() {
     soundqueue.shift();
   }
   if (soundmark != soundplace) {
-    //I wonder if I need soundrow at all now...
-    if ([1,numbells+1].includes(soundmark)) {
-      soundrow++;
-    }
+    let soundline = "#sound-line"+soundrow;
     if (soundmark > (numbells*2) ) {
-      resetsoundline();
+      let other = soundrow === 1 ? 2 : 1;
+      soundrow = other;
+      resetsoundline(soundrow);
     } else {
-      $(".sound.marker:nth-child("+soundmark+")").show();
+      $(soundline+" .sound.marker:nth-child("+soundmark+")").show();
     }
     soundplace = soundmark;
 
     if (soundmark === 1) {
-      $("#sound-line").css("width", "660px");
+      $(soundline).css("width", "660px");
     }
   }
 
@@ -1886,27 +1895,17 @@ function playSample(audioContext, audioBuffer, pan) {
 }
 
 //reset so it can start again
-function resetsoundline() {
-  $(".sound.marker").hide();
-  $(".sound.marker").removeClass("mymarker");
-  positionmarkers();
-  let line = $("#sound-line").detach();
+function resetsoundline(n) {
+  let id = "#sound-line"+n;
+  $(id+" .sound.marker").hide();
+  $(id+" .sound.marker").removeClass("mymarker");
+  positionlinemarkers(id);
+  let line = $(id).detach();
   line.css("width", "0");
-  $("#visuals li:first-child").append(line);
+  $("#visuals li:nth-child("+n+")").append(line);
 }
 
-function showmarker(bell, stroke) {
-  let row = rowArray[soundrow].bells;
-  let p = row.indexOf(bell)+1;
-  if (stroke === -1) p += numbells;
-  if (p % numbells === 0) soundrow++;
-  if (p === 1) {
-    resetsoundline();
-    $("#sound-line").css("width", "660px");
-  }
-  $(".sound.marker:nth-child("+p+")").show();
-  $("#soundtest").text(p.toString());
-}
+
 
 
 
