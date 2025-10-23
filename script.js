@@ -138,6 +138,7 @@ var thatsall;
 //objects have: place in whole pull, time, mybell (boolean), diff
 //
 var soundqueue = [];
+//just alternates between 1 and 2, determines which of the two sound lines is currently in use
 var soundrow = 1;
 var soundplace;
 
@@ -203,7 +204,7 @@ $(function(){
 
   //simulator
   $("#start").on("click", playpauseclick);
-  
+  $("#reset").on("click", resetsimulator);
 });
 
 // INITIAL SETUP
@@ -1628,6 +1629,33 @@ function setdur(s,i) {
 
 /* ***** RUN THE SIMULATOR ***** */
 
+function resetsimulator() {
+  if (!$("#reset").hasClass("disabled")) {
+    $("#reset").addClass("disabled");
+    $("#display,#callcontainer,.instruct").text("");
+    
+    //set bells at hand
+    for (let i = 1; i <= numbells; i++) {
+      pull({bell: i, stroke: -1},audioCtx.currentTime+i*delay);
+    }
+    //reset things
+    rownum = 0;
+    ringingplace = 0;
+    roundscount = 0;
+    lastcall = "";
+    ringingstroke = 1;
+    thatsall = false;
+    currentcall = null;
+    soundrow = 1;
+    soundplace = 0;
+    callqueue = [];
+    soundqueue = [];
+    resetsoundline(1);
+    resetsoundline(2);
+    //course order sally stuff
+  }
+}
+
 function playpauseclick() {
   if (!playing) {
     treblesgoing();
@@ -1680,7 +1708,11 @@ function nextPlace() {
     if (ringingstroke === -1) {
       nextBellTime += delay*simopts.handgap + .23*simopts.duration; //add handstroke gap
       //schedule soundline reset - sort of
-      soundqueue.push({place: numbells*2+1, time: nextBellTime});
+      let o = {place: numbells*2+1, time: nextBellTime};
+      if (rownum === rowArray.length && thatsall) {
+        o.thatsall = true;
+      }
+      soundqueue.push(o);
       
     } else {
       nextBellTime -= .23*simopts.duration;
@@ -1699,9 +1731,7 @@ function nextPlace() {
       //}
     }
 
-    if (rownum === rowArray.length && thatsall) {
-      thatisall();
-    }
+    
   }
 }
 
@@ -1776,16 +1806,22 @@ function animater() {
   }
   //feedback stuff
   let soundmark = soundplace;
+  let ending;
   if (soundqueue[0] && soundqueue[0].time < currentTime) {
     soundmark = soundqueue[0].place;
+    ending = soundqueue[0].thatsall;
     soundqueue.shift();
   }
   if (soundmark != soundplace) {
     let soundline = "#sound-line"+soundrow;
     if (soundmark > (numbells*2) ) {
-      let other = soundrow === 1 ? 2 : 1;
-      soundrow = other;
-      resetsoundline(soundrow);
+      if (ending) {
+        thatisall();
+      } else {
+        let other = soundrow === 1 ? 2 : 1;
+        soundrow = other;
+        resetsoundline(soundrow);
+      }
     } else {
       $(soundline+" .sound.marker:nth-child("+soundmark+")").show();
     }
