@@ -329,6 +329,10 @@
     font-size: 20pt;
   }
 
+  #visuals li:first-child {
+    margin-bottom: 24px;
+  }
+
   #sound-line1, #sound-line2 {
     position: relative;
     width: 0;
