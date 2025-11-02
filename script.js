@@ -99,7 +99,7 @@ var simopts = {
   roundsrows: 8,
   stopatrounds: true,
   nthrounds: 1,
-  waitforgaps: true,
+  waitforgaps: false,
   solidme: false,
   solidtreble: false,
   cosallies: false,
@@ -145,9 +145,10 @@ var soundplace;
 
 var mybells = [];
 var mbells = [];
+var keysdown = [];
 var listeners = [
-  //{id: "hand15b", event: "endEvent", f: endpull},
-  //{id: "back14b", event: "endEvent", f: endpull},
+  {id: "hand15b", event: "endEvent", f: endpull},
+  {id: "back14b", event: "endEvent", f: endpull},
   {id: "sally", event: "mouseover", f: pointer},
   {id: "sally", event: "click", f: emitring},
   {id: "tail", event: "mouseover", f: pointer},
@@ -218,6 +219,9 @@ $(function(){
   //simulator
   $("#start").on("click", playpauseclick);
   $("#reset").on("click", resetsimulator);
+  $("body").on("keydown", keyring);
+  $("body").on("keyup", updatekeysdown);
+  
 });
 
 // INITIAL SETUP
@@ -1889,6 +1893,24 @@ function thatisall() {
 
 /* ***** SIMULATOR USE ***** */
 
+//ring with keyboard
+function keyring(e) {
+  let bell = mbells.find(o => o.keys.includes(e.key));
+  if (bell && !bell.ringing && !keysdown.includes(e.key) && !simopts.standbehind) {
+    keysdown.push(e.key);
+    let stroke = currentbells.find(b => b.num === bell.num).stroke;
+    let o = {bell: bell.num, stroke: stroke};
+    pull(o);
+  }
+}
+
+function updatekeysdown(e) {
+  let i = keysdown.indexOf(e.key);
+  if (i > -1) {
+    keysdown.splice(i, 1);
+  }
+}
+
 //emit ring from a click
 function emitring(e) {
   let num = this.id.startsWith("sally") ? Number(this.id.slice(5)) : Number(this.id.slice(4));
@@ -1917,6 +1939,14 @@ function pointer(e) {
 
 function prevent(e) {
   e.preventDefault();
+}
+
+function endpull(e) {
+  let bellnum = Number(this.id.slice(7));
+  let bell = mbells.find(o => o.num === bellnum);
+  if (bell) {
+    bell.ringing = false;
+  }
 }
 
 
