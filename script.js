@@ -123,6 +123,7 @@ var ringingplace = 0;
 var nextBellTime = 0.0;
 var ringingstroke = 1;
 var timeout;
+var animrequest;
 var lookahead = 5.0;
 var schedule = 0.02;
 var waiting;
@@ -1679,7 +1680,7 @@ function treblesgoing() {
     ringingplace = -2;
   }
   //actually go
-  requestAnimationFrame(animater);
+  animrequest = requestAnimationFrame(animater);
   if (rownum === 0 && mybells.includes(1) && !simopts.standbehind) {
     console.log("waiting in treblesgoing");
     waiting = true;
@@ -1709,7 +1710,7 @@ function nextPlace() {
       nextBellTime += delay*simopts.handgap + .23*simopts.duration; //add handstroke gap
       //schedule soundline reset - sort of
       let o = {place: numbells*2+1, time: nextBellTime};
-      if (rownum === rowArray.length && thatsall) {
+      if (rownum === rowArray.length-1 && thatsall) {
         o.thatsall = true;
       }
       soundqueue.push(o);
@@ -1833,7 +1834,7 @@ function animater() {
   }
 
   if (playing) {
-    requestAnimationFrame(animater);
+    animrequest = requestAnimationFrame(animater);
   }
 }
 
@@ -1842,6 +1843,7 @@ function thatisall() {
   playing = false;
   waiting = false;
   clearTimeout(timeout);
+  cancelAnimationFrame(animrequest);
   $("#start").text("Start");
   $("#reset").removeClass("disabled");
   //enable inputs again...
