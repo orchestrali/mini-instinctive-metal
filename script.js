@@ -96,7 +96,7 @@ var simopts = {
   hours: 3,
   minutes: 0,
   handgap: 1,
-  roundsrows: 2,
+  roundsrows: 8,
   stopatrounds: true,
   nthrounds: 1,
   waitforgaps: true,
@@ -145,6 +145,18 @@ var soundplace;
 
 var mybells = [];
 var mbells = [];
+var listeners = [
+  //{id: "hand15b", event: "endEvent", f: endpull},
+  //{id: "back14b", event: "endEvent", f: endpull},
+  {id: "sally", event: "mouseover", f: pointer},
+  {id: "sally", event: "click", f: emitring},
+  {id: "tail", event: "mouseover", f: pointer},
+  {id: "tail", event: "click", f: emitring},
+  {id: "hand", event: "touchstart", f: emitring},
+  {id: "back", event: "touchstart", f: emitring},
+  {id: "hand", event: "touchend", f: prevent},
+  {id: "back", event: "touchend", f: prevent}
+];
 
 
 
@@ -1441,12 +1453,16 @@ function routersimulator(title) {
     o.row = o.bells.map(n => [n]);
   });
   //need to add extra rounds row and go call
+  let zero = rowArray[0];
   if (rowArray[0].rowNum === 0) {
-    let zero = rowArray[0];
     let extra = {rowNum: -1, row: zero.row, bells: zero.bells};
     let call = "Go "+(method.name && method.name.length ? method.name : "next time");
     extra.call = call;
     rowArray.unshift(extra);
+  }
+  for (let i = 0; i < simopts.roundsrows-2; i++) {
+    let o = {rowNum: -2-i, row: zero.row, bells: zero.bells};
+    rowArray.unshift(o);
   }
   firstcall = rowArray[0].call || null;
   //markers
@@ -1455,8 +1471,8 @@ function routersimulator(title) {
   //set of sounds/bell objects to use
   buildcurrentbells("tower", numbells);
   //set peal speed
-  speed = 2.3;
-  calcpealspeed();
+  setpealspeed();
+  calcspeed();
   //set "mybell" if auto?
   if (!queryobj.blueBell || queryobj.blueBell === "auto") {
     let blue = chooseworking(1);
@@ -1469,7 +1485,7 @@ function routersimulator(title) {
   //connect sounds to ropes
   buildtower(blueBell, numbells);
   //assign bell
-  //$("#sally6,#tail6").on("click", emitring);
+  assign(blueBell);
   //which things need resetting?
   $("#simulatorcontainer").show();
 }
@@ -1478,6 +1494,26 @@ function routersimulator(title) {
 
 
 /* ***** SIMULATOR SETUP ***** */
+
+function setpealspeed() {
+  let minutes = 150 + numbells*5;
+  let h = Math.floor(minutes/60);
+  let m = minutes % 60;
+  $("#hours").val(h);
+  $("#minutes").val(m);
+}
+
+//take peal speed values and calculate row and blow duration
+function calcspeed() {
+  let h = Number($("#hours").val());
+  let m = Number($("#minutes").val());
+  savesimspeed(h,m);
+  let minutes = h*60 + m;
+  let wholepull = minutes / 2520;
+  delay = wholepull * 60 / (numbells*2+1);
+  speed = delay*numbells;
+  $("#sound-line1,#sound-line2").css("transition", "width "+(speed*2-delay)+"s linear");
+}
 
 //take speed and calculate delay and peal speed
 function calcpealspeed() {
@@ -1489,7 +1525,7 @@ function calcpealspeed() {
   $("#hours").val(h);
   $("#minutes").val(m);
   savesimspeed(h,m);
-  $("#sound-line").css("transition", "width "+(speed*2-delay)+"s linear");
+  $("#sound-line1,#sound-line2").css("transition", "width "+(speed*2-delay)+"s linear");
 }
 
 function savesimspeed(h, m) {
@@ -1868,6 +1904,21 @@ function emitring(e) {
   pull(o);
 }
 
+//adjust cursor on bell rope
+function pointer(e) {
+  let num = this.id.startsWith("sally") ? Number(this.id.slice(5)) : Number(this.id.slice(4));
+  let bell = currentbells.find(b => b.num === num);
+  if ((this.id.startsWith("sally") && bell.stroke === 1) || (this.id.startsWith("tail") && bell.stroke === -1)) {
+    this.style.cursor = "pointer";
+  } else {
+    this.style.cursor = "auto";
+  }
+}
+
+function prevent(e) {
+  e.preventDefault();
+}
+
 
 //ring a bell
 //obj has: bell (number), stroke (1 or -1)
@@ -1944,6 +1995,77 @@ function resetsoundline(n) {
 }
 
 
+
+
+/* ***** SIMULATOR ADJUSTMENTS ***** */
+
+//assign bell to user
+function assign(n) {
+  //remove existing listeners
+  listeners.forEach(l => {
+    mybells.forEach(b => {
+      document.getElementById(l.id+b).removeEventListener(l.event, l.f);
+    });
+    if (n && !simopts.standbehind) {
+      document.getElementById(l.id+n).addEventListener(l.event, l.f);
+    }
+  });
+  if (n) {
+    mybells = [n];
+    //update keyboard controls
+    let str = "1234567890-=";
+    let keys = str[n-1];
+    keys += "j";
+    mbells = [{num: n, keys: keys}];
+    $("#mykeys").val(keys);
+
+    //rotate ropes
+    let diff1 = blueBell - n;
+    let diff2 = n - blueBell;
+    if (diff1 < 0) diff1 += numbells;
+    if (diff2 < 0) diff2 += numbells;
+    let dir = diff1 <= diff2 ? 1 : -1;
+    let diff = dir === 1 ? diff1 : diff2;
+    if (diff > 0) {
+      $("#myrope").prop("disabled", true);
+      rotate(dir);
+      diff--;
+      let timer = setInterval(function() {
+        if (diff > 0) {
+          rotate(dir);
+          diff--;
+        } else {
+          $("#myrope").prop("disabled", false);
+          centerrope = [n];
+          clearTimeout(timer);
+        }
+      }, 700);
+    }
+    //instructions
+    //co sally stuff
+  }
+}
+
+//rotate rope circle
+function rotate(dir) {
+  let pos = [];
+  for (let i = 1; i <= numbells; i++) {
+    let bell = currentbells.find(b => b.num === i);
+    let o = {
+      left: bell.left,
+      z: bell.z
+    }
+    pos.push(o);
+  }
+
+  dir === 1 ? pos.push(pos.shift()) : pos.unshift(pos.pop());
+  for (let i = 1; i <= numbells; i++) {
+    let bell = currentbells.find(b => b.num === i);
+    $("#chute"+i).css({"left": pos[i-1].left+"px", transform: "translateZ("+pos[i-1].z+"px)"});
+    bell.left = pos[i-1].left;
+    bell.z = pos[i-1].z;
+  }
+}
 
 
 
