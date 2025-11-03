@@ -1592,7 +1592,7 @@ function buildtower(start, n) {
     addrope(num);
     position(i,num);
     //attach sounds to animation
-    let handstroke = document.getElementById("hand8b"+num);
+    let handstroke = document.getElementById("hand9b"+num);
     handstroke.addEventListener("beginEvent", ring);
     let backstroke = document.getElementById("back11b"+num);
     backstroke.addEventListener("beginEvent", ring);
@@ -1796,7 +1796,7 @@ function scheduleRing(p, t) {
         o.place += numbells;
         o.time += 13*simopts.duration/21;
       } else {
-        o.time += 8*simopts.duration/21;
+        o.time += 9*simopts.duration/21;
       }
       soundqueue.push(o);
     }
