@@ -1851,6 +1851,10 @@ function animater() {
   if (soundqueue[0] && soundqueue[0].time < currentTime) {
     soundmark = soundqueue[0].place;
     ending = soundqueue[0].thatsall;
+    if (soundqueue[0].mybell) {
+      let marker = $("#sound-line"+soundrow+" .sound.marker:nth-child("+soundmark+")");
+      marker.addClass("mymarker");
+    }
     soundqueue.shift();
   }
   if (soundmark != soundplace) {
