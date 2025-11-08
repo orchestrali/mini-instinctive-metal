@@ -1451,6 +1451,10 @@ function buildrowarr() {
 
 //should probably do something with title?
 function routersimulator(title) {
+  $("#myrope option").remove();
+  for (let i = 1; i <= numbells; i++) {
+    $("#myrope").append(`<option value="${i}">${i}</option>`);
+  }
   //build row array in needed format
   //actually just modify the row array I'm already building
   rowArray.forEach(o => {
@@ -1484,6 +1488,7 @@ function routersimulator(title) {
   } else {
     blueBell = Number(queryobj.blueBell);
   }
+  $("#myrope option:nth-child("+blueBell+")").attr("selected", true);
   //add ropes
   //position ropes
   //connect sounds to ropes
