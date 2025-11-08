@@ -2110,7 +2110,7 @@ function rotate(dir) {
 
 
 function simoptionschange(e) {
-  console.log(this.id);
+  console.log($(this).attr("type"));
 }
 
 
