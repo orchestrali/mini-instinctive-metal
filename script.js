@@ -221,6 +221,8 @@ $(function(){
   $("#reset").on("click", resetsimulator);
   $("body").on("keydown", keyring);
   $("body").on("keyup", updatekeysdown);
+  $("#simulatorcontainer input").on("change", simoptionschange);
+
   
 });
 
@@ -2104,6 +2106,11 @@ function rotate(dir) {
     bell.left = pos[i-1].left;
     bell.z = pos[i-1].z;
   }
+}
+
+
+function simoptionschange(e) {
+  console.log(this.id);
 }
 
 
