@@ -222,6 +222,7 @@ $(function(){
   $("body").on("keydown", keyring);
   $("body").on("keyup", updatekeysdown);
   $("#simulatorcontainer input").on("change", simoptionschange);
+  $("#myrope").on("change", myropechange);
 
   
 });
@@ -1495,6 +1496,16 @@ function routersimulator(title) {
   //position ropes
   //connect sounds to ropes
   buildtower(blueBell, numbells);
+  let perspective = "63% 40%";
+  switch (numbells) {
+    case 12:
+      perspective = "55% 40%";
+      break;
+    case 10:
+      perspective = "57% 40%";
+      break;
+  }
+  $("#bells").css("-webkit-perspective-origin", perspective);
   //assign bell
   assign(blueBell);
   //which things need resetting?
@@ -2039,6 +2050,13 @@ function resetsoundline(n) {
 
 
 /* ***** SIMULATOR ADJUSTMENTS ***** */
+
+
+function myropechange(e) {
+  let n = Number($("#myrope option:selected").val());
+  console.log(n);
+  assign(n);
+}
 
 //assign bell to user
 function assign(n) {
