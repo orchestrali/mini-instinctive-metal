@@ -1508,6 +1508,13 @@ function routersimulator(title) {
   $("#bells").css("-webkit-perspective-origin", perspective);
   //assign bell
   assign(blueBell);
+  //set up coursing order
+  if (method.leadHeadCode && method.hunts.length === 1) {
+    let co = homecourseorder(method.stage);
+    co.unshift(method.stage);
+    method.courseorder = co;
+  }
+  method.courseorder ? $("#li-cosallies").show() : $("#li-cosallies").hide();
   //which things need resetting?
   $("#simulatorcontainer").show();
 }
@@ -2128,8 +2135,99 @@ function rotate(dir) {
 
 
 function simoptionschange(e) {
-  console.log($(this).attr("type"));
+  let inputtype = $(this).attr("type");
+  if (inputtype === "checkbox") {
+    simopts[this.id] = $(this).is(":checked");
+  } else {
+    simopts[this.id] = Number($(this).val());
+  }
+  switch (this.id) {
+    case "volume":
+      //make a change
+      gainNode.gain.value = simopts.volume;
+      break;
+    case "duration":
+      //update animations
+      //should this trigger a speed change?
+      adjustanimduration();
+      break;
+    case "hours": case "minutes":
+      //update speed
+      calcspeed();
+      break;
+    case "roundsrows":
+      //adjust row array
+      adjustroundsrows();
+      break;
+    case "cosallies": case "solidme": case "solidtreble":
+      //apply sally colors
+      sallycolor();
+      break;
+    case "highlightunder": case "fadeabove":
+      //fade ropes, disable the other
+      break;
+    case "displayplace": case "instructions":
+      //setup
+      break;
+      //need to add keyboard controls adjustments
+    case "feedback":
+      //need to actually add this???
+      break;
+    case "left-right": case "up-down": case "zoom": case "depth":
+      //adjust perspective
+      break;
+  }
 }
+
+
+function sallycolor() {
+  if (simopts.cosallies) {
+    let courseorder = method.courseorder;
+    let n = courseorder.includes(mybells[0]) ? mybells[0] : courseorder[0];
+    $("#sally"+n).attr("fill", sallycolors[0]);
+    let i = courseorder.indexOf(n);
+    for (let j = 1; j <= Math.floor(courseorder.length/2); j++) {
+      let next = i+j;
+      if (next >= courseorder.length) next -= courseorder.length;
+      $("#sally"+courseorder[next]).attr("fill", sallycolors[j]);
+      if (courseorder.length%2 === 1 || j < Math.ceil(courseorder.length/2)) {
+        let before = i-j;
+        if (before < 0) before += courseorder.length;
+        $("#sally"+courseorder[before]).attr("fill", sallycolors[sallycolors.length-j]);
+      }
+    }
+  } else {
+    for (let b = 1; b <= numbells; b++) {
+      $("#sally"+b).attr("fill", simopts.solidme && mybells.includes(b) ? "darkred" : simopts.solidtreble && b===1 ? "red" : "url(#sallypattern)");
+    }
+  }
+}
+
+
+function adjustroundsrows() {
+  rowArray = rowArray.filter(o => o.rowNum > -2);
+  let zero = rowArray[0];
+  for (let i = 0; i < simopts.roundsrows-2; i++) {
+    let o = {rowNum: -2-i, row: zero.row, bells: zero.bells};
+    rowArray.unshift(o);
+  }
+  firstcall = rowArray[0].call || null;
+}
+
+
+function adjustanimduration() {
+  for (let n = 1; n <= numbells; n++) {
+    for (let i = 0; i < 15; i++) {
+      ["hand", "back"].forEach(s => {
+        let j = s === "hand" ? i+1 : i;
+        let id = ["#",s,j,"b",n].join("");
+        let dur = setdur(s,i)+"s";
+        $(id).attr("dur", dur);
+      });
+    }
+  }
+}
+
 
 
 
@@ -2826,6 +2924,17 @@ function buildpborder(pn, pnstage) {
     pbs = [];
   }
   return pborder;
+}
+
+//build plain bob course order
+//does not include tenor
+function homecourseorder(stage) {
+  let home = [];
+  for (let b = 2; b < stage; b+=2) {
+    home.push(b);
+    if (b < stage-1) home.unshift(b+1);
+  }
+  return home;
 }
 
 //categorize tokens in supposed place notation
