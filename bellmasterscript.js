@@ -170,7 +170,7 @@ function setupRopes(n) {
     addrope(bells[j]);
     position(i,num);
     
-    let handstroke = document.getElementById("hand9b"+num);
+    let handstroke = document.getElementById("hand8b"+num);
     handstroke.addEventListener("beginEvent", ring);
     let backstroke = document.getElementById("back11b"+num);
     backstroke.addEventListener("beginEvent", ring);
@@ -210,7 +210,7 @@ function stagechange(n) {
     addrope(bells[j]);
     position(i,num);
     
-    let handstroke = document.getElementById("hand9b"+num);
+    let handstroke = document.getElementById("hand8b"+num);
     handstroke.addEventListener("beginEvent", ring);
     let backstroke = document.getElementById("back11b"+num);
     backstroke.addEventListener("beginEvent", ring);
@@ -428,7 +428,7 @@ function nextPlace() {
   if (place === numbells) {
     //console.log("finished with row "+rownum);
     if (stroke === -1) {
-      soundqueue.push({place: numbells, rownum: rownum, time: nextBellTime + .23*duration + 9*duration/21});
+      soundqueue.push({place: numbells, rownum: rownum, time: nextBellTime + .23*duration + 8*duration/21});
       nextBellTime += delay + .23*duration; //add handstroke gap
     }
     if (stroke === 1) nextBellTime -= .23*duration;
@@ -497,7 +497,7 @@ function scheduleRing(p, t) {
       pull(num[0],t);
     }
     if (bell || (p === 0 && rownum%2 === 0)) {
-      let x = stroke === 1 ? 9 : 13;
+      let x = stroke === 1 ? 8 : 13;
       soundqueue.push({place: p, rownum: rownum, time: t+x*duration/21});
     }
     if (rownum === 0 && p === 0 && roundscount === 0) {
@@ -621,7 +621,7 @@ function pull(n, t) {
         } else {
           keepgoing = false;
         }
-        soundqueue.push({time: now+(bell.stroke === -1 ? 9 : 13)*duration/21, place: myqueue[0].place, mybell: true, rownum: myqueue[0].rownum, diff: diff});
+        soundqueue.push({time: now+(bell.stroke === -1 ? 8 : 13)*duration/21, place: myqueue[0].place, mybell: true, rownum: myqueue[0].rownum, diff: diff});
         if (Math.abs(diff) < .1) {
           ringtiming = "Good!";
           myqueue.shift();
