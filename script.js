@@ -1784,7 +1784,7 @@ function nextPlace() {
   //end of row
   if (ringingplace === numbells) {
     //console.log("end of row "+rownum);
-    nextBellTime += calcnextdelay(stroke);
+    nextBellTime += calcnextdelay(ringingstroke);
     if (ringingstroke === -1) {
       //schedule soundline reset - sort of
       let o = {place: numbells*2+1, time: nextBellTime-delay};
