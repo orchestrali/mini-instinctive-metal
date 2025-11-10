@@ -1601,9 +1601,8 @@ function positionmarkers() {
 function positionlinemarkers(id) {
   let left = -8;
   let distance = 660/(2*numbells-1);
-  for (let i = 1; i <= numbells; i++) {
+  for (let i = 1; i <= numbells*2; i++) {
     $(id+" .sound.marker:nth-child("+i+")").css("left", left+"px");
-    $(id+" .sound.marker:nth-child("+(i+numbells)+")").css("left", (left+360)+"px");
     left += distance;
   }
   console.log(left-distance);
