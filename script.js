@@ -1761,10 +1761,10 @@ function treblesgoing() {
 
 function calcnextdelay(stroke) {
   let currentfraction = stroke === 1 ? 11 : 14;
-  let currentdiff = currentfraction/21 * duration;
+  let currentdiff = currentfraction/21 * simopts.duration;
   let nextsound = currentdiff + delay;
   let nextfraction = stroke === 1 ? 14 : 11;
-  let nextstart = nextsound - nextfraction/21*duration;
+  let nextstart = nextsound - nextfraction/21*simopts.duration;
   if (stroke === -1) nextstart += delay*simopts.handgap; //handstroke gap
   return nextstart;
 }
