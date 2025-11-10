@@ -1759,10 +1759,21 @@ function treblesgoing() {
   
 }
 
+function calcnextdelay(stroke) {
+  let currentfraction = stroke === 1 ? 11 : 14;
+  let currentdiff = currentfraction/21 * duration;
+  let nextsound = currentdiff + delay;
+  let nextfraction = stroke === 1 ? 14 : 11;
+  let nextstart = nextsound - nextfraction/21*duration;
+  if (stroke === -1) nextstart += delay*simopts.handgap; //handstroke gap
+  return nextstart;
+}
+
 //advance a place in the scheduling
 function nextPlace() {
-  nextBellTime += delay;
   ringingplace++;
+  if (ringingplace < numbells) nextBellTime += delay;
+  
   if (ringingplace === 1) {
     //schedule call
     if (currentcall) {
@@ -1773,18 +1784,16 @@ function nextPlace() {
   //end of row
   if (ringingplace === numbells) {
     //console.log("end of row "+rownum);
+    nextBellTime += calcnextdelay(stroke);
     if (ringingstroke === -1) {
-      nextBellTime += delay*simopts.handgap + .23*simopts.duration; //add handstroke gap
       //schedule soundline reset - sort of
-      let o = {place: numbells*2+1, time: nextBellTime};
+      let o = {place: numbells*2+1, time: nextBellTime-delay};
       if (rownum === rowArray.length-1 && thatsall) {
         o.thatsall = true;
       }
       soundqueue.push(o);
       
-    } else {
-      nextBellTime -= .23*simopts.duration;
-    }
+    } 
     ringingplace = 0;
     ringingstroke *= -1;
     rownum++;
