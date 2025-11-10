@@ -1600,11 +1600,13 @@ function positionmarkers() {
 //reset one line of markers
 function positionlinemarkers(id) {
   let left = -8;
+  let distance = 660/(2*numbells-1);
   for (let i = 1; i <= numbells; i++) {
     $(id+" .sound.marker:nth-child("+i+")").css("left", left+"px");
     $(id+" .sound.marker:nth-child("+(i+numbells)+")").css("left", (left+360)+"px");
-    left += 660/(2*numbells-1);
+    left += distance;
   }
+  console.log(left-distance);
 }
 
 //set up all the ropes
