@@ -271,7 +271,7 @@ function apologies(problem, obj) {
 
 //only send an obj here if it has keys
 function fillform(obj) {
-
+  console.log(obj);
   //need to do the text numbers too
   
   selects.forEach(s => {
