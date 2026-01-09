@@ -1542,7 +1542,8 @@ function drawgridsvg(arr, paths, width, x) {
   let filtered = paths.filter(o => o.color != "red");
   let drawplaces = filtered.length && !queryobj.describe && !stedman && gridtype === "gridline";
   if (drawplaces) {
-    drawplacebells(width+20, yinc-6, filtered, arr[0].bells);
+    let y = queryobj.numbers ? yinc-6 : yinc-1;
+    drawplacebells(width+20, y, filtered, arr[0].bells);
   }
   
   for (let i = 1; i < arr.length; i++) {
@@ -1553,7 +1554,8 @@ function drawgridsvg(arr, paths, width, x) {
     if (arr[i].name === "leadhead" && !stedman) {
       svg.line(lines, x-2, y, width, y);
       if (drawplaces) {
-        drawplacebells(width+20, y+yinc-6, filtered, arr[i].bells);
+        let placey = queryobj.numbers ? y+yinc-6 : y+yinc-2;
+        drawplacebells(width+20, placey, filtered, arr[i].bells);
       }
     }
     if (["b", "s"].includes(arr[i].type)) {
