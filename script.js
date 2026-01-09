@@ -271,7 +271,7 @@ function apologies(problem, obj) {
 
 //only send an obj here if it has keys
 function fillform(obj) {
-  console.log(obj);
+  //console.log(obj);
   //need to do the text numbers too
   
   selects.forEach(s => {
@@ -306,7 +306,8 @@ function fillform(obj) {
   });
 
   checked.forEach(c => {
-    $(`input[name="${c}"]`).prop("checked", obj[c]);
+    let check = obj[c] ? true : false;
+    $(`input[name="${c}"]`).prop("checked", check);
     if (["gap", "includeTime"].includes(c)) {
       $(`input[name="${c}"]`).change();
     }
