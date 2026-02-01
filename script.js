@@ -2084,7 +2084,7 @@ function pnNumAbbr(tokens, pnstage) {
       }
       
       //if the value ends with the opposite quality from the stage, add stage to end
-      if (stage%2 != numArr[numArr.length-1] % 2) {
+      if (pnstage%2 != numArr[numArr.length-1] % 2) {
         numArr.push(pnstage);
       }
       t.value = numArr;
