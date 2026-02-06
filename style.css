@@ -336,6 +336,10 @@
     margin-top: 0;
   }
 
+  li.rangeinput {
+    display: flex;
+  }
+
   ul#conduct li {
     display: inline-block;
     padding: 4px;
