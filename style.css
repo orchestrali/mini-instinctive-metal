@@ -334,10 +334,6 @@
     border-top: 0;
   }
 
-  ul#simulatoropts {
-    margin-top: 0;
-  }
-
   li.rangeinput {
     display: flex;
   }
