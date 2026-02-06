@@ -131,6 +131,7 @@ var schedule = 0.02;
 var waiting;
 var rownum = 0;
 var roundscount = 0;
+//a call given in the first row, not the first call whenever it happens
 var firstcall;
 var currentcall;
 var callqueue = [];
@@ -1809,10 +1810,16 @@ function nextPlace() {
     if (rownum === rowArray.length-2) {
       //nearing end
       roundscount++;
-      //if ((roundscount === simopts.nthrounds && simopts.stopatrounds) || comp) {
+      if ((roundscount === simopts.nthrounds && simopts.stopatrounds) || comp) {
         thatsall = true;
         if (currentcall === " ") currentcall = "That's all!";
-      //}
+      }
+    }
+
+    if (rownum === rowArray.length && !thatsall) {
+      //repeat the rowArray
+      //resetting of bells rung required???
+      rownum = simopts.roundsrows;
     }
 
     
@@ -2033,7 +2040,7 @@ function ring(e) {
     let z = (bell.z)/100;
     pan.push(x, 10, z);
     if (simopts.melouder) {
-      let multiplier = mybells.includes(bellnum) ? 1.35 : 0.75;
+      let multiplier = mybells.includes(bellnum) ? 1.2 : 0.75;
       gainNode.gain.value = simopts.volume * multiplier;
     }
     let buffer = bell.buffer;
@@ -2159,6 +2166,14 @@ function simoptionschange(e) {
   } else {
     simopts[this.id] = Number($(this).val());
   }
+  /*
+    options simply set and used:
+    "handgap"
+    "stopatrounds", "nthrounds"
+    "waitforgaps"
+    "standbehind"
+    "melouder"
+  */
   switch (this.id) {
     case "volume":
       //make a change
