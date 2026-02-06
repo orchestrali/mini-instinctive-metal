@@ -183,7 +183,12 @@ $(function(){
   //nav toggle
   $("#nav-options").click(function() {
     $("#nav-options ul").slideToggle(600, "swing");
-    $(".arrow").toggleClass("rotate");
+    $("#nav-options .arrow").toggleClass("rotate");
+  });
+  //simulator toggle
+  $("#simulatormenu").on("click", () => {
+    $("#simulatormenu .arrow").toggleClass("rotate");
+    $("#options").slideToggle(600, "swing");
   });
   
   $("#stage").change(stagechange);
