@@ -1461,6 +1461,7 @@ function buildrowarr() {
 
 //should probably do something with title?
 function routersimulator(title) {
+  $("#simulatorcontainer h1").text(title);
   $("#myrope option").remove();
   for (let i = 1; i <= numbells; i++) {
     $("#myrope").append(`<option value="${i}">${i}</option>`);
