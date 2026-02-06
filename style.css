@@ -313,7 +313,7 @@
     padding-left: 20px;
   }
 
-  #simulatorcontainer > div:first-child {
+  #simulatorcontainer > div:nth-child(2) {
     padding: 20px;
   }
 
