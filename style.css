@@ -304,7 +304,11 @@
   /* ****** SIMULATOR ****** */
 
   #simulatorcontainer > div {
-    margin-left: 20px;
+    padding-left: 20px;
+  }
+
+  #simulatorcontainer > div:first-child {
+    padding: 20px;
   }
 
   #simulatorcontainer input[type="number"] {
