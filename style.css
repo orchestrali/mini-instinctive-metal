@@ -303,12 +303,33 @@
 
   /* ****** SIMULATOR ****** */
 
+  #simulatorcontainer > div {
+    margin-left: 20px;
+  }
+
   #simulatorcontainer input[type="number"] {
     width: 60px;
   }
 
+  #simulatormenu {
+    border: 1px solid black;
+  }
+
+  #simulatormenu h4 {
+    display: inline-block;
+  }
+  #simulatormenu .arrow {
+    border-right: 8px solid black;
+  }
+
   #options {
     display: none;
+    border: 1px solid black;
+    border-top: 0;
+  }
+
+  ul#simulatoropts {
+    margin-top: 0;
   }
 
   ul#conduct li {
