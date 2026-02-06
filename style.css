@@ -307,6 +307,10 @@
     width: 60px;
   }
 
+  #options {
+    display: none;
+  }
+
   ul#conduct li {
     display: inline-block;
     padding: 4px;
