@@ -232,6 +232,13 @@ $(function(){
   $("#simulatorcontainer input").on("change", simoptionschange);
   $("#myrope").on("change", myropechange);
 
+  //prevent duplication in keyboard commands
+  $("#options").on("keypress", "input.keyboard", function(e) {
+    if (mbells.find(o => o.keys.includes(e.key))) {
+      e.preventDefault();
+    }
+  });
+
   
 });
 
@@ -2163,7 +2170,7 @@ function simoptionschange(e) {
   let inputtype = $(this).attr("type");
   if (inputtype === "checkbox") {
     simopts[this.id] = $(this).is(":checked");
-  } else {
+  } else if (this.id != "mykeys") {
     simopts[this.id] = Number($(this).val());
   }
   /*
@@ -2202,7 +2209,11 @@ function simoptionschange(e) {
     case "displayplace": case "instructions":
       //setup
       break;
+    case "mykeys":
       //need to add keyboard controls adjustments
+      let b = mbells[0]; //should be exactly one item in mbells
+      b.keys = $(this).val();
+      break;
     case "feedback":
       //need to actually add this???
       break;
