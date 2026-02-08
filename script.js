@@ -120,17 +120,24 @@ var speed = 2.3;
 var delay;
 //
 var playing = false;
+//these variables are for scheduling purposes and will get ahead of the actual position in the rows
 //zero-indexed
 var ringingplace = 0;
 var nextBellTime = 0.0;
 var ringingstroke = 1;
+var rownum = 0;
+var roundscount = 0;
+
+var actualposition = {rep: 0, rownum: 0};
+//times when the first *pull* of the row is scheduled to start
+var rowstartqueue = [];
+
 var timeout;
 var animrequest;
 var lookahead = 5.0;
 var schedule = 0.02;
 var waiting;
-var rownum = 0;
-var roundscount = 0;
+
 //a call given in the first row, not the first call whenever it happens
 var firstcall;
 var currentcall;
@@ -1641,11 +1648,13 @@ function buildtower(start, n) {
     let backstroke = document.getElementById("back11b"+num);
     backstroke.addEventListener("beginEvent", ring);
 
+    /*
     //timing tracking
     let handstart = document.getElementById("hand1b"+num);
     handstart.addEventListener("beginEvent", tracktime);
     let backstart = document.getElementById("back0b"+num);
     backstart.addEventListener("beginEvent", tracktime);
+    */
   }
 }
 
@@ -1744,6 +1753,8 @@ function resetsimulator() {
     resetsoundline(1);
     resetsoundline(2);
     ringingdata = {scheduled: [], actual: []};
+    actualposition = {rep: 0, rownum: 0};
+    rowstartqueue = [];
     //course order sally stuff
   }
 }
@@ -1826,7 +1837,7 @@ function nextPlace() {
     if (rownum === rowArray.length-2) {
       //nearing end
       roundscount++;
-      if ((roundscount === simopts.nthrounds && simopts.stopatrounds) || comp) {
+      if ((roundscount === simopts.nthrounds && simopts.stopatrounds)) { // || comp
         thatsall = true;
         if (currentcall === " ") currentcall = "That's all!";
       }
@@ -1836,6 +1847,9 @@ function nextPlace() {
       //repeat the rowArray
       //resetting of bells rung required???
       rownum = simopts.roundsrows;
+      rowArray[rownum].row.forEach(a => {
+        if (a.length === 2) a.pop();
+      });
     }
 
     
@@ -1845,7 +1859,7 @@ function nextPlace() {
 //p is ringingplace, t is nextBellTime
 function scheduleRing(p, t) {
   if (p > -1) {
-    ringingdata.scheduled.push(t);
+    //ringingdata.scheduled.push(t);
     let arr = rowArray[rownum].row[p];
     let bell = arr && arr.length;
     let mine = bell ? mybells.includes(arr[0]) : null;
@@ -1859,6 +1873,7 @@ function scheduleRing(p, t) {
         time: t,
         mybell: mine
       };
+      if (p === 0) rowstartqueue.push({bell: arr[0], time: t, mybell: mine, rownum: rownum});
       if (ringingstroke === -1) {
         o.place += numbells;
         o.time += 13*simopts.duration/21;
@@ -1912,6 +1927,23 @@ function animater() {
     lastcall = call;
     lastcallrow = callrow;
   }
+  let starto;
+  while (rowstartqueue.length && rowstartqueue[0].time < currentTime) {
+    starto = rowstartqueue.shift();
+  }
+  if (starto) {
+    if (starto.rownum < actualposition.rownum && roundscount > actualposition.rep) {
+      actualposition.rep = roundscount;
+      for (let i = starto.rownum+1; i < rowArray.length; i++) {
+        let o = rowArray[i];
+        o.row.forEach(a => {
+          if (a.length === 2) a.pop();
+        });
+      }
+    }
+    actualposition.rownum = starto.rownum;
+  }
+  
   //feedback stuff
   let soundmark = soundplace;
   let ending;
@@ -2031,13 +2063,20 @@ function pull(obj, t) {
     let bell = currentbells.find(b => b.num === obj.bell);
 
     if (bell && bell.stroke === obj.stroke) { //if strokes are consistent
-      //stuff to do if it's my bell
-
       
       //actually pull the rope
       t ? document.getElementById(id).beginElementAt(t-now) : document.getElementById(id).beginElement();
       
       bell.stroke = obj.stroke * -1;
+      
+      //stuff to do if it's my bell
+      if (!t) {
+        let arr = rowArray[actualposition.rownum].row.find(a => a[0] === obj.bell);
+        if (arr[1]) {
+          //[to do] ringing too quickly??? maybe I'm in first place and the rownum hasn't caught up yet?
+        }
+        arr[1] = true;
+      }
     }
 
     if (waiting) {
