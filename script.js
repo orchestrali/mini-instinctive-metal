@@ -347,6 +347,7 @@ function getqueryparams() {
 //third issue: too much info! conflicting info!
 //not enough info needs to be handled generally
 //filling the form should be separate from submitting it
+//[to do] this needs lots of updates as I restore things!!
 function checkqueryparams(obj, oldobj) {
   let problem;
   //currently only grid or staff type
@@ -435,8 +436,6 @@ function apologies(problem, obj) {
 
 //only send an obj here if it has keys
 function fillform(obj) {
-
-  //need to do the text numbers too
   
   selects.forEach(s => {
     //dealing with stage earlier 
@@ -671,7 +670,7 @@ function typechange() {
   $("div#"+type+"opts").removeClass("hidden");
   
   //remove higher stages for graph and simulator
-  //I don't appear to be dealing with people having selected one of those stages
+  //[to do] I don't appear to be dealing with people having selected one of those stages
   $("#stage option:nth-child(n+11)").prop("disabled", ["graph", "simulator"].includes(type));
 }
 
@@ -1412,7 +1411,7 @@ function routerpn(obj) {
   let title;
   //console.log(res);
   if (res[0]) {
-    //error
+    //[to do] error
   } else {
     let pn = res[1];
     let m = findbypn(pn, obj.stage);
@@ -1452,7 +1451,7 @@ function buildrowarr() {
       rowArray.unshift({rowNum: 0, bells: rounds(method.stage)});
       break;
     case "touch":
-      // stuff here later
+      //[to do] stuff here later
       break;
     default:
       buildplaincourse(method.stage, method.plainPN);
@@ -1476,7 +1475,7 @@ function buildrowarr() {
   numbells = rowArray[0].bells.length;
 }
 
-//should probably do something with title?
+
 function routersimulator(title) {
   $("#simulatorcontainer h1").text(title);
   $("#myrope option").remove();
@@ -1549,6 +1548,7 @@ function routersimulator(title) {
 
 /* ***** SIMULATOR SETUP ***** */
 
+//default speed based on number of bells
 function setpealspeed() {
   let minutes = 150 + numbells*5;
   let h = Math.floor(minutes/60);
@@ -1660,7 +1660,7 @@ function buildtower(start, n) {
 
 //copied from bellmaster, some differences
 function position(i, num) {
-  let radius = 270; //update this for non-div by 4 stages
+  let radius = 270; //[to do] update this for non-div by 4 stages
   let zrad = 270; //diff ????
   let angle = 2*Math.PI/numbells*i;
   //adjustment here for user ringing two bells
@@ -1755,7 +1755,7 @@ function resetsimulator() {
     ringingdata = {scheduled: [], actual: []};
     actualposition = {rep: 0, rownum: 0};
     rowstartqueue = [];
-    //course order sally stuff
+    //[to do] course order sally stuff
   }
 }
 
@@ -1772,7 +1772,7 @@ function treblesgoing() {
   playing = true;
   $("#start").text("Stop");
   $("#reset").addClass("disabled");
-  //need to distinguish already-disabled inputs
+  //[to do] need to distinguish already-disabled inputs
   //disable everything
   //$("#options input").prop("disabled", true);
 
@@ -1814,7 +1814,7 @@ function nextPlace() {
     if (currentcall) {
       callqueue.push({call: currentcall, time: nextBellTime, rownum: rownum});
     }
-    //stuff to do if showing placebells and/or sally coursing order
+    //[to do] stuff to do if showing placebells and/or sally coursing order
   }
   //end of row
   if (ringingplace === numbells) {
@@ -1837,7 +1837,7 @@ function nextPlace() {
     if (rownum === rowArray.length-2) {
       //nearing end
       roundscount++;
-      if ((roundscount === simopts.nthrounds && simopts.stopatrounds)) { // || comp
+      if ((roundscount === simopts.nthrounds && simopts.stopatrounds)) { //[to do] || comp
         thatsall = true;
         if (currentcall === " ") currentcall = "That's all!";
       }
@@ -1846,6 +1846,7 @@ function nextPlace() {
     if (rownum === rowArray.length && !thatsall) {
       //repeat the rowArray
       //resetting of bells rung required???
+      //only resetting the first row here, others in the animater function
       rownum = simopts.roundsrows;
       rowArray[rownum].row.forEach(a => {
         if (a.length === 2) a.pop();
@@ -1991,7 +1992,7 @@ function thatisall() {
   cancelAnimationFrame(animrequest);
   $("#start").text("Start");
   $("#reset").removeClass("disabled");
-  //enable inputs again...
+  //[to do] enable inputs again...
 }
 
 
@@ -2229,8 +2230,8 @@ function assign(n) {
         }
       }, 700);
     }
-    //instructions
-    //co sally stuff
+    //[to do] instructions
+    //[to do] co sally stuff
   }
 }
 
@@ -2278,7 +2279,7 @@ function simoptionschange(e) {
       break;
     case "duration":
       //update animations
-      //should this trigger a speed change?
+      //[to do] should this trigger a speed change?
       adjustanimduration();
       break;
     case "hours": case "minutes":
@@ -2294,10 +2295,10 @@ function simoptionschange(e) {
       sallycolor();
       break;
     case "highlightunder": case "fadeabove":
-      //fade ropes, disable the other
+      //[to do] fade ropes, disable the other
       break;
     case "displayplace": case "instructions":
-      //setup
+      //[to do] setup
       break;
     case "mykeys":
       //need to add keyboard controls adjustments
@@ -2305,10 +2306,10 @@ function simoptionschange(e) {
       b.keys = $(this).val();
       break;
     case "feedback":
-      //need to actually add this???
+      //[to do] need to actually add this???
       break;
     case "left-right": case "up-down": case "zoom": case "depth":
-      //adjust perspective
+      //[to do] adjust perspective
       break;
   }
 }
