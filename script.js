@@ -1886,6 +1886,7 @@ function scheduleRing(p, t) {
     if (rownum === 0 && p === 0) {
       console.log("first bell");
       callqueue.push({call: "", time: t, rownum: rownum});
+      actualposition.rowstart = t;
     }
     //schedule first call
     if (rownum === simopts.roundsrows-2 && p === 1 && firstcall) {
@@ -1942,6 +1943,7 @@ function animater() {
       }
     }
     actualposition.rownum = starto.rownum;
+    actualposition.rowstart = currentTime;
   }
   
   //feedback stuff
@@ -2052,6 +2054,17 @@ function endpull(e) {
   }
 }
 
+//if the method has an odd number of rows and the course is rung more than once, rownum%2 won't indicate stroke :(
+function checkcurrentstroke() {
+  let prelim = actualposition.rownum%2 === 0 ? 1 : -1;
+  if (rowArray.length%2 === 0) {
+    return prelim;
+  } else {
+    if (actualposition.rep%2 === 1) prelim *= -1;
+    return prelim;
+  }
+}
+
 
 //ring a bell
 //obj has: bell (number), stroke (1 or -1)
@@ -2069,23 +2082,43 @@ function pull(obj, t) {
       
       bell.stroke = obj.stroke * -1;
       
-      //stuff to do if it's my bell
+      //[to do] stuff to do if it's my bell
       if (!t) {
-        let arr = rowArray[actualposition.rownum].row.find(a => a[0] === obj.bell);
+        //indicate my bell has been rung, to prevent waiting
+        let currentstroke = checkcurrentstroke();
+        let arr = findmyplacearr(actualposition.rownum);
+        if (currentstroke != obj.stroke) {
+          //if my stroke doesn't match this row, try previous and next rows
+          let i = actualposition.rownum + (arr[1] ? 1 : -1);
+          
+          if (rowArray[i]) {
+            arr = findmyplacearr(i);
+          }
+          
+        }
         if (arr[1]) {
-          //[to do] ringing too quickly??? maybe I'm in first place and the rownum hasn't caught up yet?
+          //[to do] I think the remaining ways this can happen are:
+          //SECOND extra ring this row! can ignore
+          //there is no next row. no problem if it's truly the end, but if the thing is being repeated this could be an issue
+          
         }
         arr[1] = true;
+        
       }
     }
 
     if (waiting) {
       //either user has the treble and needs to start everything, or "wait for human" is on and they are late
       nextBellTime = Math.max(audioCtx.currentTime, nextBellTime); //waiting === true ? now+delay : 
+      if (waiting === true) actualposition.rowstart = now;
       waiting = false;
       scheduler();
     }
   }
+}
+
+function findmyplacearr(rn) {
+  return rowArray[rn].row.find(a => a[0] === mybells[0]);
 }
 
 function tracktime() {
