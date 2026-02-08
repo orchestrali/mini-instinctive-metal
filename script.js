@@ -2013,6 +2013,7 @@ function endpull(e) {
 
 //ring a bell
 //obj has: bell (number), stroke (1 or -1)
+//if user has triggered the pull, no t
 function pull(obj, t) {
   if (currentbells.length) {
     let now = audioCtx.currentTime;
@@ -2031,7 +2032,7 @@ function pull(obj, t) {
 
     if (waiting) {
       //either user has the treble and needs to start everything, or "wait for human" is on and they are late
-      nextBellTime = waiting === true ? now+delay : Math.max(audioCtx.currentTime, nextBellTime);
+      nextBellTime = Math.max(audioCtx.currentTime, nextBellTime); //waiting === true ? now+delay : 
       waiting = false;
       scheduler();
     }
