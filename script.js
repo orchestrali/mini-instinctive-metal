@@ -2030,8 +2030,10 @@ function pull(obj, t) {
     }
 
     if (waiting) {
+      //either user has the treble and needs to start everything, or "wait for human" is on and they are late
+      nextBellTime = waiting === true ? now+delay : Math.max(audioCtx.currentTime, nextBellTime);
       waiting = false;
-      //more stuff later
+      scheduler();
     }
   }
 }
