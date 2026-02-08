@@ -332,6 +332,11 @@
     display: none;
     border: 1px solid black;
     border-top: 0;
+    padding-top: 20px;
+  }
+
+  #simulatoropts {
+    margin: 0;
   }
 
   li.rangeinput {
