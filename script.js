@@ -161,6 +161,8 @@ var listeners = [
   {id: "hand", event: "touchend", f: prevent},
   {id: "back", event: "touchend", f: prevent}
 ];
+//saving timing data
+var ringingdata = {scheduled: [], actual: []};
 
 
 
@@ -1638,6 +1640,12 @@ function buildtower(start, n) {
     handstroke.addEventListener("beginEvent", ring);
     let backstroke = document.getElementById("back11b"+num);
     backstroke.addEventListener("beginEvent", ring);
+
+    //timing tracking
+    let handstart = document.getElementById("hand1b"+num);
+    handstart.addEventListener("beginEvent", tracktime);
+    let backstart = document.getElementById("back0b"+num);
+    backstart.addEventListener("beginEvent", tracktime);
   }
 }
 
@@ -1735,6 +1743,7 @@ function resetsimulator() {
     soundqueue = [];
     resetsoundline(1);
     resetsoundline(2);
+    ringingdata = {scheduled: [], actual: []};
     //course order sally stuff
   }
 }
@@ -1836,6 +1845,7 @@ function nextPlace() {
 //p is ringingplace, t is nextBellTime
 function scheduleRing(p, t) {
   if (p > -1) {
+    ringingdata.scheduled.push(t);
     let arr = rowArray[rownum].row[p];
     let bell = arr && arr.length;
     let mine = bell ? mybells.includes(arr[0]) : null;
@@ -2037,6 +2047,11 @@ function pull(obj, t) {
       scheduler();
     }
   }
+}
+
+function tracktime() {
+  let t = audioCtx.currentTime;
+  if (playing) ringingdata.actual.push(t);
 }
 
 //given animation event find the buffer to play
