@@ -1790,6 +1790,8 @@ function treblesgoing() {
     };
     return o;
   });
+  let first = myrowtimes[0].place;
+  
   //actually go
   animrequest = requestAnimationFrame(animater);
   if (rownum === 0 && mybells.includes(1) && !simopts.standbehind) {
@@ -1893,6 +1895,9 @@ function scheduleRing(p, t) {
         o.special = true;
         //o.scheduled = false;
         //o.diff = 0;
+      }
+      if (mine && rownum === 0) {
+        myrowtimes[0].scheduled = t;
       }
       if (p === 0) rowstartqueue.push({bell: arr[0], time: t, mybell: mine, rownum: rownum});
       if (ringingstroke === -1) {
@@ -2450,7 +2455,8 @@ function simoptionschange(e) {
       }
       if (simopts.displayplace) {
         mybells.forEach(b => {
-          $("#chute"+b).append(`<div id="instruct${b}" class="instruct"></div>`);
+          let p = placeName(b);
+          $("#chute"+b).append(`<div id="instruct${b}" class="instruct">${p}</div>`);
           //[to do] display initial place? or do that when treble's going? or wait til after rounds??
         });
       } else {
