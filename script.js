@@ -1896,8 +1896,8 @@ function scheduleRing(p, t) {
         //o.scheduled = false;
         //o.diff = 0;
       }
-      if (mine && rownum === 0) {
-        myrowtimes[0].scheduled = t;
+      if (mine && !myrowtimes[rownum].scheduled) {
+        myrowtimes[rownum].scheduled = t;
       }
       if (p === 0) rowstartqueue.push({bell: arr[0], time: t, mybell: mine, rownum: rownum});
       if (ringingstroke === -1) {
@@ -2159,6 +2159,7 @@ function pull(obj, t) {
           rn = -1;
         }
         arr[1] = true;
+        console.log("my row: "+rn);
 
         if (rn > -1) {
           
@@ -2204,7 +2205,7 @@ function pull(obj, t) {
 
             if (simopts.displayplace) {
               let b = p+1;
-              $("#instruct"+obj.bell).text(b === 0 ? "???" : b === 1 ? "Lead" : b === 2 ? "2nd" : b === 3 ? "3rd" : b+"th");
+              $("#instruct"+obj.bell).text(b === 0 ? "???" : placeName(b));
             }
           }
         }
