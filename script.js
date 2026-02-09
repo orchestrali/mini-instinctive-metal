@@ -1993,6 +1993,7 @@ function animater() {
     } else {
       let increment = 660/(2*numbells-1);
       marker = {row: soundrow, mark: o.place, mine: true};
+      let d = o.rownum - actualposition.rownum;
       if ((o.place <= numbells && d === 1) || (o.place > numbells && d === -1)) {
         marker.row = soundrow === 1 ? 2 : 1;
       }
