@@ -168,6 +168,8 @@ var listeners = [
   {id: "hand", event: "touchend", f: prevent},
   {id: "back", event: "touchend", f: prevent}
 ];
+var myrowtimes;
+var myqueue = [];
 //saving timing data
 var ringingdata = {scheduled: [], actual: []};
 
@@ -1628,7 +1630,7 @@ function positionlinemarkers(id) {
     $(id+" .sound.marker:nth-child("+i+")").css("left", left+"px");
     left += distance;
   }
-  console.log(left-distance);
+  //console.log(left-distance);
 }
 
 //set up all the ropes
@@ -1781,6 +1783,13 @@ function treblesgoing() {
   if (rownum === 0 && (!mybells.includes(1) || simopts.standbehind)) {
     ringingplace = -2;
   }
+  myrowtimes = rowArray.map((r,i) => {
+    let o = {
+      rownum: i,
+      place: r.row.findIndex(a => a[0] === mybells[0])
+    };
+    return o;
+  });
   //actually go
   animrequest = requestAnimationFrame(animater);
   if (rownum === 0 && mybells.includes(1) && !simopts.standbehind) {
@@ -1794,6 +1803,7 @@ function treblesgoing() {
   
 }
 
+//calculate the time between pulling the last bell of one stroke and pulling the first bell of the next (different from time between sounds)
 function calcnextdelay(stroke) {
   let currentfraction = stroke === 1 ? 11 : 14;
   let currentdiff = currentfraction/21 * simopts.duration;
@@ -1822,7 +1832,7 @@ function nextPlace() {
     nextBellTime += calcnextdelay(ringingstroke);
     if (ringingstroke === -1) {
       //schedule soundline reset - sort of
-      let o = {place: numbells*2+1, time: nextBellTime-delay};
+      let o = {place: numbells*2+1, time: nextBellTime-delay, scheduled: true};
       if (rownum === rowArray.length-1 && thatsall) {
         o.thatsall = true;
       }
@@ -1841,16 +1851,19 @@ function nextPlace() {
         thatsall = true;
         if (currentcall === " ") currentcall = "That's all!";
       }
+      if (!thatsall) {
+        rowArray[simopts.roundsrows].row.forEach(a => {
+          if (a.length === 2) a.pop();
+        });
+      }
     }
 
     if (rownum === rowArray.length && !thatsall) {
       //repeat the rowArray
       //resetting of bells rung required???
-      //only resetting the first row here, others in the animater function
+      //resetting the first row above, a bit early, others in the animater function
       rownum = simopts.roundsrows;
-      rowArray[rownum].row.forEach(a => {
-        if (a.length === 2) a.pop();
-      });
+      
     }
 
     
@@ -1872,8 +1885,15 @@ function scheduleRing(p, t) {
       let o = {
         place: p+1,
         time: t,
-        mybell: mine
+        mybell: mine,
+        scheduled: true
       };
+      if (mine && !simopts.standbehind && rownum === 0 && p === 0) {
+        //if I have the treble and this is the very first blow
+        o.special = true;
+        //o.scheduled = false;
+        //o.diff = 0;
+      }
       if (p === 0) rowstartqueue.push({bell: arr[0], time: t, mybell: mine, rownum: rownum});
       if (ringingstroke === -1) {
         o.place += numbells;
@@ -1881,6 +1901,7 @@ function scheduleRing(p, t) {
       } else {
         o.time += 9*simopts.duration/21;
       }
+      
       soundqueue.push(o);
     }
     //clear "treble's going"
@@ -1935,6 +1956,7 @@ function animater() {
   }
   if (starto) {
     if (starto.rownum < actualposition.rownum && roundscount > actualposition.rep) {
+      //repeating the row array
       actualposition.rep = roundscount;
       for (let i = starto.rownum+1; i < rowArray.length; i++) {
         let o = rowArray[i];
@@ -1950,18 +1972,38 @@ function animater() {
   //feedback stuff
   let soundmark = soundplace;
   let ending;
+  let o;
+  let marker;
   if (soundqueue[0] && soundqueue[0].time < currentTime) {
-    soundmark = soundqueue[0].place;
-    ending = soundqueue[0].thatsall;
-    if (soundqueue[0].mybell) {
-      let marker = $("#sound-line"+soundrow+" .sound.marker:nth-child("+soundmark+")");
-      marker.addClass("mymarker");
-    }
-    soundqueue.shift();
+    o = soundqueue.shift();
   }
+
+  if (o.scheduled) {
+    soundmark = o.place;
+    ending = o.thatsall;
+    if (soundmark < numbells*2+1 && (!o.mybell || simopts.standbehind || o.special)) {
+      marker = {row: soundrow, mark: soundmark, mine: o.mybell};
+    }
+  } else {
+    let increment = 660/(2*numbells-1);
+    marker = {row: soundrow, mark: o.place, mine: true};
+    if ((o.place <= numbells && d === 1) || (o.place > numbells && d === -1)) {
+      marker.row = soundrow === 1 ? 2 : 1;
+    }
+    marker.left = -8 + increment*o.place + increment*o.diff/delay;
+  }
+
+  if (marker) {
+    let dot = $("#sound-line"+marker.row+" .sound.marker:nth-child("+marker.mark+")");
+    if (marker.mine) dot.addClass("mymarker");
+    if (marker.left) dot.css("left", marker.left+"px");
+    dot.show();
+  }
+
   if (soundmark != soundplace) {
+    //o is scheduled and new
     let soundline = "#sound-line"+soundrow;
-    if (soundmark > (numbells*2) ) {
+    if (soundmark > (numbells*2)) {
       if (ending) {
         thatisall();
       } else {
@@ -1969,11 +2011,9 @@ function animater() {
         soundrow = other;
         resetsoundline(soundrow);
       }
-    } else {
-      $(soundline+" .sound.marker:nth-child("+soundmark+")").show();
     }
-    soundplace = soundmark;
 
+    //start line
     if (soundmark === 1) {
       $(soundline).css("width", "660px");
     }
@@ -2077,6 +2117,8 @@ function pull(obj, t) {
     let bell = currentbells.find(b => b.num === obj.bell);
 
     if (bell && bell.stroke === obj.stroke) { //if strokes are consistent
+      let mbell = mbells.find(b => b.num === obj.bell);
+      if (mbell) mbell.ringing = true;
       
       //actually pull the rope
       t ? document.getElementById(id).beginElementAt(t-now) : document.getElementById(id).beginElement();
@@ -2084,26 +2126,80 @@ function pull(obj, t) {
       bell.stroke = obj.stroke * -1;
       
       //[to do] stuff to do if it's my bell
-      if (!t) {
+      if (playing && mbell) {
+        //need some of this whether I'm standing behind or not
         //indicate my bell has been rung, to prevent waiting
         let currentstroke = checkcurrentstroke();
-        let arr = findmyplacearr(actualposition.rownum);
+        let strokerung = currentstroke;
+        let rn = actualposition.rownum;
+        let arr = findmyplacearr(rn);
         if (currentstroke != obj.stroke) {
           //if my stroke doesn't match this row, try previous and next rows
-          let i = actualposition.rownum + (arr[1] ? 1 : -1);
-          
+          let i = rn + (arr[1] ? 1 : -1);
+          if (i === rowArray.length && simopts.nthrounds > actualposition.rep) i = simopts.roundsrows;
           if (rowArray[i]) {
+            rn = i;
             arr = findmyplacearr(i);
           }
-          
+          strokerung *= -1;
         }
         if (arr[1]) {
-          //[to do] I think the remaining ways this can happen are:
+          //I think the remaining ways this can happen are:
           //SECOND extra ring this row! can ignore
-          //there is no next row. no problem if it's truly the end, but if the thing is being repeated this could be an issue
-          
+          //there is no next row
+          //I think I have accounted for repeating the course
+          rn = -1;
         }
         arr[1] = true;
+
+        if (rn > -1) {
+          
+          myrowtimes[rn].actual = now;
+          let scheduled = (rn === 0 && myrowtimes[rn].place === 0) ? now : myrowtimes[rn].scheduled;
+          let p1 = myrowtimes[rn].place;
+          //add to soundqueue
+          if (myrowtimes[rn].scheduled && !simopts.standbehind) {
+            let o = {
+              rownum: rn,
+              place: p1+1,
+              time: now,
+              mybell: true,
+              diff: now-scheduled
+            };
+            if (strokerung === -1) {
+              o.place += numbells;
+              o.time += 13*simopts.duration/21;
+            } else {
+              o.time += 9*simopts.duration/21;
+            }
+            soundqueue.push(o);
+          }
+          
+          
+          //my row should advance if it can
+          let next = rn+1;
+          if (next === rowArray.length && simopts.nthrounds > actualposition.rep) next = simopts.roundsrows;
+          if (rowArray[next]) {
+            let nextrow = rowArray[next].row;
+            let p = findmyplace(next); //myrowtimes[next].place;
+
+            let nexttime = scheduled + speed + (p-p1)*delay + calcnextdelay(strokerung);
+            myrowtimes[next].scheduled = nexttime;
+  
+            if (simopts.highlightunder) {
+              let n = p > 0 ? nextrow[p-1][0] : p === 0 ? obj.bell : null;
+              if (n) highlight(n);
+            } else if (simopts.fadeabove) {
+              let fade = p > -1 ? nextrow.slice(p+1).map(a => a[0]) : [];
+              fadeout(fade); //even if array is empty, that might be a change! 
+            }
+
+            if (simopts.displayplace) {
+              let b = p+1;
+              $("#instruct"+obj.bell).text(b === 0 ? "???" : b === 1 ? "Lead" : b === 2 ? "2nd" : b === 3 ? "3rd" : b+"th");
+            }
+          }
+        }
         
       }
     }
@@ -2116,6 +2212,13 @@ function pull(obj, t) {
       scheduler();
     }
   }
+}
+
+function findmyplace(rn) {
+  return rowArray[rn].row.findIndex(a => a[0] === mybells[0]);
+}
+function getmyplacearr(rn, p) {
+  return rowArray[rn].row[p];
 }
 
 function findmyplacearr(rn) {
@@ -2176,6 +2279,21 @@ function resetsoundline(n) {
   $("#visuals li:nth-child("+n+")").append(line);
 }
 
+//fade all but bell n
+function highlight(n) {
+  //console.log("highlighting "+n);
+  $(".highlight").removeClass("highlight").addClass("fade");
+  $("#chute"+n).removeClass("fade").addClass("highlight");
+}
+
+//fade bells in arr
+function fadeout(arr) {
+  $(".chute").removeClass("fade highlight");
+  for (let i = 1; i <= numbells; i++) {
+    $("#chute"+i).addClass(arr.includes(i) ? "fade" : "highlight");
+  }
+}
+
 
 
 
@@ -2199,6 +2317,7 @@ function assign(n) {
       document.getElementById(l.id+n).addEventListener(l.event, l.f);
     }
   });
+  $("div.instruct").remove();
   if (n) {
     mybells = [n];
     //update keyboard controls
@@ -2230,7 +2349,12 @@ function assign(n) {
         }
       }, 700);
     }
+    blueBell = n;
+    
     //[to do] instructions
+    if (simopts.displayplace) {
+      $("#chute"+n).append(`<div id="instruct${n}" class="instruct"></div>`);
+    }
     //[to do] co sally stuff
   }
 }
@@ -2296,17 +2420,38 @@ function simoptionschange(e) {
       break;
     case "highlightunder": case "fadeabove":
       //[to do] fade ropes, disable the other
+      if (simopts[this.id]) {
+        $(".following input").prop("disabled", true);
+        $(this).prop("disabled", false);
+      } else {
+        $(".following input").prop("disabled", false);
+      }
       break;
     case "displayplace": case "instructions":
       //[to do] setup
+      if (simopts[this.id]) {
+        $(".displayplace input").prop("disabled", true);
+        $(this).prop("disabled", false);
+      } else {
+        $(".displayplace input").prop("disabled", false);
+      }
+      if (simopts.displayplace) {
+        mybells.forEach(b => {
+          $("#chute"+b).append(`<div id="instruct${b}" class="instruct"></div>`);
+          //[to do] display initial place? or do that when treble's going? or wait til after rounds??
+        });
+      } else {
+        $("div.instruct").remove();
+      }
       break;
     case "mykeys":
-      //need to add keyboard controls adjustments
+      
       let b = mbells[0]; //should be exactly one item in mbells
       b.keys = $(this).val();
       break;
     case "feedback":
       //[to do] need to actually add this???
+      //should I disable this if waiting is on?
       break;
     case "left-right": case "up-down": case "zoom": case "depth":
       //[to do] adjust perspective
