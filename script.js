@@ -1972,6 +1972,7 @@ function animater() {
     }
     actualposition.rownum = starto.rownum;
     actualposition.rowstart = currentTime;
+    console.log("row "+starto.rownum+" starting");
   }
   
   //feedback stuff
