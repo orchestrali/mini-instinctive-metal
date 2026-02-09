@@ -176,7 +176,7 @@ var ringingdata = {scheduled: [], actual: []};
 
 
 $(function(){
-  console.log("ridiculous array behavior");
+  console.log("too much repetition");
   window.location.hash = "";
   //disable gridgrid input elements
   changegridtype();
@@ -1499,7 +1499,8 @@ function routersimulator(title) {
     rowArray.unshift(extra);
   }
   for (let i = 0; i < simopts.roundsrows-2; i++) {
-    let o = {rowNum: -2-i, row: zero.row, bells: zero.bells};
+    let o = {rowNum: -2-i, row: [], bells: zero.bells};
+    zero.bells.forEach(b => extra.row.push([b]));
     rowArray.unshift(o);
   }
   firstcall = rowArray[0].call || null;
