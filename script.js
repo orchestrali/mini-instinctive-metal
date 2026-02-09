@@ -1500,7 +1500,7 @@ function routersimulator(title) {
   }
   for (let i = 0; i < simopts.roundsrows-2; i++) {
     let o = {rowNum: -2-i, row: [], bells: zero.bells};
-    zero.bells.forEach(b => extra.row.push([b]));
+    zero.bells.forEach(b => o.row.push([b]));
     rowArray.unshift(o);
   }
   firstcall = rowArray[0].call || null;
