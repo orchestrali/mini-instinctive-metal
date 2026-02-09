@@ -176,7 +176,7 @@ var ringingdata = {scheduled: [], actual: []};
 
 
 $(function(){
-  console.log("too much repetition");
+  console.log("logging stuff");
   window.location.hash = "";
   //disable gridgrid input elements
   changegridtype();
@@ -2152,6 +2152,7 @@ function pull(obj, t) {
         if (currentstroke != obj.stroke) {
           //if my stroke doesn't match this row, try previous and next rows
           let i = rn + (arr[1] ? 1 : -1);
+          console.log("row to check: "+i);
           if (i === rowArray.length && simopts.nthrounds > actualposition.rep) i = simopts.roundsrows;
           if (rowArray[i]) {
             rn = i;
