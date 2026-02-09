@@ -1976,7 +1976,7 @@ function animater() {
     }
     actualposition.rownum = starto.rownum;
     actualposition.rowstart = currentTime;
-    console.log("row "+starto.rownum+" starting");
+    //console.log("row "+starto.rownum+" starting");
   }
   
   //feedback stuff
@@ -2515,7 +2515,7 @@ function adjustroundsrows() {
   rowArray = rowArray.filter(o => o.rowNum > -2);
   let zero = rowArray[0];
   for (let i = 0; i < simopts.roundsrows-2; i++) {
-    let o = {rowNum: -2-i, row: zero.row, bells: zero.bells};
+    let o = {rowNum: -2-i, row: zero.bells.map(n => [n]), bells: zero.bells};
     rowArray.unshift(o);
   }
   firstcall = rowArray[0].call || null;
