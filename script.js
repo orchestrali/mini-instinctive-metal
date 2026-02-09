@@ -1899,7 +1899,11 @@ function scheduleRing(p, t) {
       if (mine && !myrowtimes[rownum].scheduled) {
         myrowtimes[rownum].scheduled = t;
       }
-      if (p === 0) rowstartqueue.push({bell: arr[0], time: t, mybell: mine, rownum: rownum});
+      if (p === 0) {
+        let time = t;
+        if (rownum > 0 && myrowtimes[rownum-1].place === numbells-1) time += delay;
+        rowstartqueue.push({bell: arr[0], time: time, mybell: mine, rownum: rownum});
+      }
       if (ringingstroke === -1) {
         o.place += numbells;
         o.time += 13*simopts.duration/21;
@@ -2141,6 +2145,7 @@ function pull(obj, t) {
         let currentstroke = checkcurrentstroke();
         let strokerung = currentstroke;
         let rn = actualposition.rownum;
+        console.log("actual row? "+rn);
         let arr = findmyplacearr(rn);
         if (currentstroke != obj.stroke) {
           //if my stroke doesn't match this row, try previous and next rows
