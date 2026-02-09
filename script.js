@@ -1886,6 +1886,7 @@ function scheduleRing(p, t) {
     let arr = rowArray[rownum].row[p];
     let bell = arr && arr.length;
     let mine = bell ? mybells.includes(arr[0]) : null;
+    
 
     if (bell) {
       if (!mine || simopts.standbehind) pull({bell: arr[0], stroke: ringingstroke}, t);
@@ -1917,7 +1918,11 @@ function scheduleRing(p, t) {
       } else {
         o.time += 9*simopts.duration/21;
       }
-      
+      //temporary testing
+      if (mine) {
+        o.special = true;
+        ringingdata.scheduled.push(t);
+      }
       soundqueue.push(o);
     }
     //clear "treble's going"
@@ -2003,6 +2008,7 @@ function animater() {
         marker = {row: soundrow, mark: soundmark, mine: o.mybell};
       }
     } else {
+      /*
       let increment = 660/(2*numbells-1);
       marker = {row: soundrow, mark: o.place, mine: true};
       let d = o.rownum - actualposition.rownum;
@@ -2010,6 +2016,7 @@ function animater() {
         marker.row = soundrow === 1 ? 2 : 1;
       }
       marker.left = -8 + increment*o.place + increment*o.diff/delay;
+      */
     }
   }
 
@@ -2147,17 +2154,19 @@ function pull(obj, t) {
       
       //[to do] stuff to do if it's my bell
       if (playing && mbell) {
+        ringingdata.actual.push(t ? t : now);
         //need some of this whether I'm standing behind or not
         //indicate my bell has been rung, to prevent waiting
+        /*
         let currentstroke = checkcurrentstroke();
         let strokerung = currentstroke;
         let rn = actualposition.rownum;
-        console.log("actual row? "+rn);
+        //console.log("actual row? "+rn);
         let arr = findmyplacearr(rn);
         if (currentstroke != obj.stroke) {
           //if my stroke doesn't match this row, try previous and next rows
           let i = rn + (arr[1] ? 1 : -1);
-          console.log("row to check: "+i);
+          //console.log("row to check: "+i);
           if (i === rowArray.length && simopts.nthrounds > actualposition.rep) i = simopts.roundsrows;
           if (rowArray[i]) {
             rn = i;
@@ -2173,7 +2182,7 @@ function pull(obj, t) {
           rn = -1;
         }
         arr[1] = true;
-        console.log("my row: "+rn);
+        //console.log("my row: "+rn);
 
         if (rn > -1) {
           
@@ -2222,8 +2231,9 @@ function pull(obj, t) {
               $("#instruct"+obj.bell).text(b === 0 ? "???" : placeName(b));
             }
           }
+          
         }
-        
+        */
       }
     }
 
