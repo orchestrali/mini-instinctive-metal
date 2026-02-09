@@ -1759,6 +1759,11 @@ function resetsimulator() {
     ringingdata = {scheduled: [], actual: []};
     actualposition = {rep: 0, rownum: 0};
     rowstartqueue = [];
+    rowArray.forEach(row => {
+      row.row.forEach(a => {
+        if (a.length === 2) a.pop(); 
+      });
+    });
     //[to do] course order sally stuff
   }
 }
