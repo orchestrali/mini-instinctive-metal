@@ -1978,19 +1978,21 @@ function animater() {
     o = soundqueue.shift();
   }
 
-  if (o.scheduled) {
-    soundmark = o.place;
-    ending = o.thatsall;
-    if (soundmark < numbells*2+1 && (!o.mybell || simopts.standbehind || o.special)) {
-      marker = {row: soundrow, mark: soundmark, mine: o.mybell};
+  if (o) {
+    if (o.scheduled) {
+      soundmark = o.place;
+      ending = o.thatsall;
+      if (soundmark < numbells*2+1 && (!o.mybell || simopts.standbehind || o.special)) {
+        marker = {row: soundrow, mark: soundmark, mine: o.mybell};
+      }
+    } else {
+      let increment = 660/(2*numbells-1);
+      marker = {row: soundrow, mark: o.place, mine: true};
+      if ((o.place <= numbells && d === 1) || (o.place > numbells && d === -1)) {
+        marker.row = soundrow === 1 ? 2 : 1;
+      }
+      marker.left = -8 + increment*o.place + increment*o.diff/delay;
     }
-  } else {
-    let increment = 660/(2*numbells-1);
-    marker = {row: soundrow, mark: o.place, mine: true};
-    if ((o.place <= numbells && d === 1) || (o.place > numbells && d === -1)) {
-      marker.row = soundrow === 1 ? 2 : 1;
-    }
-    marker.left = -8 + increment*o.place + increment*o.diff/delay;
   }
 
   if (marker) {
@@ -2420,9 +2422,20 @@ function simoptionschange(e) {
       break;
     case "highlightunder": case "fadeabove":
       //[to do] fade ropes, disable the other
+      $(".chute").removeClass("fade highlight");
       if (simopts[this.id]) {
         $(".following input").prop("disabled", true);
         $(this).prop("disabled", false);
+        let rn = rowArray[rownum] ? rownum : 0;
+        let p = rowArray[rn].row.findIndex(a => a[0] === mybells[0]);
+        if (this.id === "highlightunder") {
+          $(".chute").addClass("fade");
+          let b = p === 0 ? mybells[0] : rowArray[rn].row[p-1][0];
+          highlight(b);
+        } else {
+          let arr = rowArray[rn].row.slice(p+1).map(a => a[0]);
+          fadeout(arr);
+        }
       } else {
         $(".following input").prop("disabled", false);
       }
