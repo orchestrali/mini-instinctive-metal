@@ -176,7 +176,7 @@ var ringingdata = {scheduled: [], actual: []};
 
 
 $(function(){
-  
+  console.log("ridiculous array behavior");
   window.location.hash = "";
   //disable gridgrid input elements
   changegridtype();
@@ -1492,7 +1492,8 @@ function routersimulator(title) {
   //need to add extra rounds row and go call
   let zero = rowArray[0];
   if (rowArray[0].rowNum === 0) {
-    let extra = {rowNum: -1, row: zero.row, bells: zero.bells};
+    let extra = {rowNum: -1, row: [], bells: zero.bells};
+    zero.bells.forEach(b => extra.row.push([b]));
     let call = "Go "+(method.name && method.name.length ? method.name : "next time");
     extra.call = call;
     rowArray.unshift(extra);
@@ -2515,7 +2516,10 @@ function adjustroundsrows() {
   rowArray = rowArray.filter(o => o.rowNum > -2);
   let zero = rowArray[0];
   for (let i = 0; i < simopts.roundsrows-2; i++) {
-    let o = {rowNum: -2-i, row: zero.bells.map(n => [n]), bells: zero.bells};
+    let o = {rowNum: -2-i, row: [], bells: zero.bells};
+    zero.bells.forEach(b => {
+      o.row.push([b]);
+    });
     rowArray.unshift(o);
   }
   firstcall = rowArray[0].call || null;
