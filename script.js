@@ -112,7 +112,7 @@ var simopts = {
   standbehind: false,
   melouder: false,
   instructions: false,
-  feedback: false
+  feedback: true
 };
 //time for one row
 var speed = 2.3;
@@ -1774,7 +1774,7 @@ function resetsimulator() {
         if (a.length === 2) a.pop(); 
       });
     });
-    myrow = 0;
+    updatedisplay(-1); //should cause myrow to be set at 0
     
     //[to do] course order sally stuff
 
@@ -1952,8 +1952,8 @@ function scheduleRing(p, t) {
         //calculate time for my next strike
         let nextrow = rownum+1;
         if (nextrow === rowArray.length) {
-          //[to do] maybe set aside data here, if ringing is continuing?
-          nextrow = (!simopts.stopatrounds || roundscount <= simopts.nthrounds) ? simopts.roundsrows : -1;
+          //by the time I'm scheduling the last row, roundscount has been increased already
+          nextrow = (!simopts.stopatrounds || roundscount < simopts.nthrounds) ? simopts.roundsrows : -1;
         }
         if (nextrow > -1) {
           let d = myrowtimes[nextrow].place - p;
@@ -2013,31 +2013,10 @@ function animater() {
   if (currentTime-mylasttime > 20) {
     thatisall();
   }
-  /*
-  //[to do] I do need to figure out a way to reset the rowarray if it's repeated
-  let starto;
-  while (rowstartqueue.length && rowstartqueue[0].time < currentTime) {
-    starto = rowstartqueue.shift();
-  }
-  if (starto) {
-    if (starto.rownum < actualposition.rownum && roundscount > actualposition.rep) {
-      //repeating the row array
-      actualposition.rep = roundscount;
-      for (let i = starto.rownum+1; i < rowArray.length; i++) {
-        let o = rowArray[i];
-        o.row.forEach(a => {
-          if (a.length === 2) a.pop();
-        });
-      }
-    }
-    actualposition.rownum = starto.rownum;
-    actualposition.rowstart = currentTime;
-    //console.log("row "+starto.rownum+" starting");
-  }
-  */
+  
 
   //update display if I'm standing behind
-  let nexttime = myrowtimes[myrow].scheduled;
+  let nexttime = myrowtimes[myrow] ? myrowtimes[myrow].scheduled : null;
   if (simopts.standbehind && nexttime < currentTime) {
     updatedisplay(myrow);
   }
@@ -2075,7 +2054,7 @@ function animater() {
     }
   }
 
-  if (marker) {
+  if (marker && simopts.feedback) {
     let dot = $("#sound-line"+marker.row+" .sound.marker:nth-child("+marker.mark+")");
     if (marker.mine) dot.addClass("mymarker");
     if (marker.left) dot.css("left", marker.left+"px");
@@ -2101,7 +2080,7 @@ function animater() {
     }
 
     //start line
-    if (soundmark === 1) {
+    if (soundmark === 1 && simopts.feedback) {
       $(soundline).css("width", "660px");
     }
   }
@@ -2336,7 +2315,7 @@ function updatedisplay(rn) {
   let bell = mybells[0];
   let next = rn+1;
   if (next === rowArray.length && (!simopts.stopatrounds || roundscount < simopts.nthrounds)) {
-    //[to do] this would probably be a good place to reset things???
+    //this would probably be a good place to reset things???
     next = simopts.roundsrows;
     myringingdata.push(...myrowtimes.slice(-3));
     for (let i = next+1; i < rowArray.length; i++) {
@@ -2353,7 +2332,7 @@ function updatedisplay(rn) {
   myrow = next;
   if (rowArray[next]) {
     let nextrow = rowArray[next].row;
-    let p = myrowtimes[next].place;
+    let p = nextrow.findIndex(a => a[0] === bell);
 
     if (simopts.highlightunder) {
       let n = p > 0 ? nextrow[p-1][0] : p === 0 ? bell : null;
@@ -2476,6 +2455,7 @@ function assign(n) {
       document.getElementById(l.id+n).addEventListener(l.event, l.f);
     }
   });
+  $("#chute"+mybells[0]).css("z-index", 1);
   $("div.instruct").remove();
   if (n) {
     mybells = [n];
@@ -2485,6 +2465,7 @@ function assign(n) {
     keys += "j";
     mbells = [{num: n, keys: keys}];
     $("#mykeys").val(keys);
+    $("#chute"+mybells[0]).css("z-index", 20);
 
     //rotate ropes
     let diff1 = blueBell - n;
@@ -2514,6 +2495,7 @@ function assign(n) {
     if (simopts.displayplace) {
       $("#chute"+n).append(`<div id="instruct${n}" class="instruct"></div>`);
     }
+    updatedisplay(-1);
     //[to do] co sally stuff
   }
 }
@@ -2555,7 +2537,20 @@ function simoptionschange(e) {
     "standbehind"
     "melouder"
   */
+  if (simopts.standbehind) {
+    //no waiting
+    $("#waitforgaps").prop("checked", false);
+    simopts.waitforgaps = false;
+  }
+  
   switch (this.id) {
+    case "waitforgaps":
+      if (simopts.waitforgaps) {
+        $("#feedback").prop({checked: false, disabled: true});
+        simopts.feedback = false;
+      } else {
+        $("#feedback").prop("disabled", false);
+      }
     case "volume":
       //make a change
       gainNode.gain.value = simopts.volume;
