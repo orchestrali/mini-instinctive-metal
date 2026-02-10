@@ -1884,11 +1884,13 @@ function nextPlace() {
         thatsall = true;
         if (currentcall === " ") currentcall = "That's all!";
       }
+      let start = myringingdata.length ? simopts.roundsrows : 0;
+      let end = thatsall ? rowArray.length : -3;
+      myringingdata.push(...myrowtimes.slice(start,end));
       if (!thatsall) {
         rowArray[simopts.roundsrows].row.forEach(a => {
           if (a.length === 2) a.pop();
         });
-        myringingdata.push(...myrowtimes.slice(simopts.roundsrows,-3));
         [simopts.roundsrows, simopts.roundsrows+1].forEach(rn => {
           let sub = {rownum: rn, place: myrowtimes[rn].place};
           myrowtimes.splice(rn, 1, sub);
@@ -2333,7 +2335,7 @@ function pull(obj, t) {
 function updatedisplay(rn) {
   let bell = mybells[0];
   let next = rn+1;
-  if (next === rowArray.length && (!simopts.stopatrounds || roundscount <= simopts.nthrounds)) {
+  if (next === rowArray.length && (!simopts.stopatrounds || roundscount < simopts.nthrounds)) {
     //[to do] this would probably be a good place to reset things???
     next = simopts.roundsrows;
     myringingdata.push(...myrowtimes.slice(-3));
