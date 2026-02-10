@@ -152,6 +152,7 @@ var soundqueue = [];
 //just alternates between 1 and 2, determines which of the two sound lines is currently in use
 var soundrow = 1;
 var soundplace;
+var handstrokerow = 0;
 
 var mybells = [];
 var mbells = [];
@@ -179,7 +180,7 @@ var ringingdata = {scheduled: [], actual: []};
 
 
 $(function(){
-  console.log("logging stuff");
+  console.log("test my ringing");
   window.location.hash = "";
   //disable gridgrid input elements
   changegridtype();
@@ -1757,6 +1758,7 @@ function resetsimulator() {
     currentcall = null;
     soundrow = 1;
     soundplace = 0;
+    handstrokerow = 0;
     callqueue = [];
     soundqueue = [];
     resetsoundline(1);
@@ -1924,8 +1926,8 @@ function scheduleRing(p, t) {
       //
       if (mine) {
         //diff between row to row schedule and place to place schedule
-        let diff = myrowtimes[rownum].scheduled ? myrowtimes[rownum].scheduled - t : null;
-        tempdiffs.push(diff);
+        //let diff = myrowtimes[rownum].scheduled ? myrowtimes[rownum].scheduled - t : null;
+        //tempdiffs.push(diff);
         //calculate time for my next strike
         let nextrow = rownum+1;
         if (nextrow === rowArray.length) {
@@ -2008,6 +2010,16 @@ function animater() {
     //console.log("row "+starto.rownum+" starting");
   }
   */
+
+  //update display if I'm standing behind
+  let nexttime = myrowtimes[myrow].scheduled;
+  if (simopts.standbehind && nexttime < currentTime) {
+    updatedisplay(myrow);
+  }
+  //keep advancing myrow even if I don't ring
+  if (nexttime && nexttime + speed/2 < currentTime) {
+    updatedisplay(myrow);
+  }
   
   //feedback stuff
   let soundmark = soundplace;
@@ -2029,11 +2041,11 @@ function animater() {
       /*
       let increment = 660/(2*numbells-1);
       marker = {row: soundrow, mark: o.place, mine: true};
-      let d = o.rownum - actualposition.rownum;
-      if ((o.place <= numbells && d === 1) || (o.place > numbells && d === -1)) {
+      let d = o.rownum - handstrokerow;
+      if (![0,1].includes(d)) {
         marker.row = soundrow === 1 ? 2 : 1;
       }
-      marker.left = -8 + increment*o.place + increment*o.diff/delay;
+      marker.left = -8 + increment*(o.place-1) + increment*o.diff/delay;
       */
     }
   }
@@ -2052,6 +2064,11 @@ function animater() {
       if (ending) {
         thatisall();
       } else {
+        handstrokerow += 2;
+        if (handstrokerow >= rowArray.length) {
+          let d = handstrokerow - rowArray.length;
+          handstrokerow = simopts.roundsrows + d;
+        }
         let other = soundrow === 1 ? 2 : 1;
         soundrow = other;
         resetsoundline(soundrow);
@@ -2151,6 +2168,16 @@ function checkcurrentstroke() {
   }
 }
 
+//check if the row number and stroke correspond
+function checkrowstroke(rn, stroke, rev) {
+  let remain = rn%2;
+  if ((remain === 0 && stroke === 1) || (remain === 1 && stroke === -1)) {
+    return rev ? false : true;
+  } else {
+    return rev;
+  }
+}
+
 
 //ring a bell
 //obj has: bell (number), stroke (1 or -1)
@@ -2171,10 +2198,45 @@ function pull(obj, t) {
       bell.stroke = obj.stroke * -1;
       
       //[to do] stuff to do if it's my bell
-      if (playing && mbell) {
-        //ringingdata.actual.push(t ? t : now);
-        //need some of this whether I'm standing behind or not
-        //indicate my bell has been rung, to prevent waiting
+      if (playing && !t) {
+
+        //if I'm starting this whole thing, this blow won't be scheduled, otherwise it should be???
+        let diff = waiting === true ? 0 : now-myrowtimes[myrow].scheduled;
+        tempdiffs.push(diff);
+        let wrongrow = Math.abs(diff) > speed/2;
+        if (wrongrow) console.log("myrow incorrect?? or very early??");
+        //assuming this is the right row, check if I'm on the right stroke
+        let polarity = checkrowstroke(rownum, ringingstroke, false);
+        let mystroke = checkrowstroke(myrow, obj.stroke, !polarity);
+        if (!mystroke) console.log("wrong stroke??");
+
+        let repeat = myrowtimes[myrow].actual;
+        if (repeat) console.log("already rung this row??");
+
+        if (!wrongrow && !repeat) {
+          let p = myrowtimes[myrow].place;
+          rowArray[myrow].row[p][1] = true;
+          myrowtimes[myrow].actual = now;
+          //add to soundqueue
+          if (myrowtimes[myrow].scheduled) {
+            let o = {
+              rownum: myrow,
+              place: p+1,
+              time: now,
+              mybell: true,
+              diff: diff
+            };
+            if (obj.stroke === -1) {
+              o.place += numbells;
+              o.time += 13*simopts.duration/21;
+            } else {
+              o.time += 9*simopts.duration/21;
+            }
+            soundqueue.push(o);
+          }
+          updatedisplay(myrow);
+        }
+        
         /*
         let currentstroke = checkcurrentstroke();
         let strokerung = currentstroke;
@@ -2225,31 +2287,6 @@ function pull(obj, t) {
             soundqueue.push(o);
           }
           
-          
-          //my row should advance if it can
-          let next = rn+1;
-          if (next === rowArray.length && simopts.nthrounds > actualposition.rep) next = simopts.roundsrows;
-          if (rowArray[next]) {
-            let nextrow = rowArray[next].row;
-            let p = findmyplace(next); //myrowtimes[next].place;
-
-            let nexttime = scheduled + speed + (p-p1)*delay + calcnextdelay(strokerung);
-            myrowtimes[next].scheduled = nexttime;
-  
-            if (simopts.highlightunder) {
-              let n = p > 0 ? nextrow[p-1][0] : p === 0 ? obj.bell : null;
-              if (n) highlight(n);
-            } else if (simopts.fadeabove) {
-              let fade = p > -1 ? nextrow.slice(p+1).map(a => a[0]) : [];
-              fadeout(fade); //even if array is empty, that might be a change! 
-            }
-
-            if (simopts.displayplace) {
-              let b = p+1;
-              $("#instruct"+obj.bell).text(b === 0 ? "???" : placeName(b));
-            }
-          }
-          
         }
         */
       }
@@ -2263,6 +2300,35 @@ function pull(obj, t) {
       scheduler();
     }
   }
+}
+
+//given a row number (where the user has just rung), update visual information
+function updatedisplay(rn) {
+  let next = rn+1;
+  if (next === rowArray.length && (!simopts.stopatrounds || roundscount <= simopts.nthrounds)) {
+    //[to do] this would probably be a good place to reset things???
+    next = simopts.roundsrows;
+  }
+  myrow = next;
+  if (rowArray[next]) {
+    let nextrow = rowArray[next].row;
+    let p = myrowtimes[next].place;
+
+    if (simopts.highlightunder) {
+      let n = p > 0 ? nextrow[p-1][0] : p === 0 ? obj.bell : null;
+      if (n) highlight(n);
+    } else if (simopts.fadeabove) {
+      let fade = p > -1 ? nextrow.slice(p+1).map(a => a[0]) : [];
+      fadeout(fade); //even if array is empty, that might be a change! 
+    }
+
+    if (simopts.displayplace) {
+      let b = p+1;
+      $("#instruct"+obj.bell).text(b === 0 ? "???" : placeName(b));
+    }
+    //[to do] instructions
+  }
+
 }
 
 function findmyplace(rn) {
