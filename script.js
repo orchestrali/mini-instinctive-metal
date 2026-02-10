@@ -1934,7 +1934,8 @@ function scheduleRing(p, t) {
         }
         if (nextrow > -1) {
           let d = myrowtimes[nextrow].place - p;
-          let nexttime = t + speed + delay*d + calcnextdelay(ringingstroke);
+          //speed is numbells * delay, but calcnextdelay provides one delay
+          let nexttime = t + speed - delay + delay*d + calcnextdelay(ringingstroke);
           myrowtimes[nextrow].scheduled = nexttime;
         }
       }
