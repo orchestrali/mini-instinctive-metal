@@ -168,8 +168,11 @@ var listeners = [
   {id: "hand", event: "touchend", f: prevent},
   {id: "back", event: "touchend", f: prevent}
 ];
+//map of rowArray, objects contain rownum which is INDEX, not rowArray rowNum, place of mybell (0-indexed)
 var myrowtimes;
 var myqueue = [];
+var myrow = 0;
+var tempdiffs = [];
 //saving timing data
 var ringingdata = {scheduled: [], actual: []};
 
@@ -1562,6 +1565,7 @@ function setpealspeed() {
 }
 
 //take peal speed values and calculate row and blow duration
+//using this one
 function calcspeed() {
   let h = Number($("#hours").val());
   let m = Number($("#minutes").val());
@@ -1574,6 +1578,7 @@ function calcspeed() {
 }
 
 //take speed and calculate delay and peal speed
+//not using this one
 function calcpealspeed() {
   delay = speed/numbells;
   let wholepull = speed*2+delay; //add handstroke gap
@@ -1764,6 +1769,9 @@ function resetsimulator() {
         if (a.length === 2) a.pop(); 
       });
     });
+    myqueue = [];
+    myrow = 0;
+    tempdiffs = [];
     //[to do] course order sally stuff
   }
 }
@@ -1786,10 +1794,6 @@ function treblesgoing() {
   //$("#options input").prop("disabled", true);
 
   //set values
-  nextBellTime = audioCtx.currentTime;
-  if (rownum === 0 && (!mybells.includes(1) || simopts.standbehind)) {
-    ringingplace = -2;
-  }
   myrowtimes = rowArray.map((r,i) => {
     let o = {
       rownum: i,
@@ -1797,7 +1801,11 @@ function treblesgoing() {
     };
     return o;
   });
-  let first = myrowtimes[0].place;
+  nextBellTime = audioCtx.currentTime;
+  if (rownum === 0 && (!mybells.includes(1) || simopts.standbehind)) {
+    ringingplace = -2;
+    myrowtimes[0].scheduled = nextBellTime + (myrowtimes[0].place+2)*delay;
+  }
   
   //actually go
   animrequest = requestAnimationFrame(animater);
@@ -1872,7 +1880,7 @@ function nextPlace() {
       //resetting of bells rung required???
       //resetting the first row above, a bit early, others in the animater function
       rownum = simopts.roundsrows;
-      
+      currentcall = rowArray[rownum] && rowArray[rownum].call ? rowArray[rownum].call : " ";
     }
 
     
@@ -1896,7 +1904,8 @@ function scheduleRing(p, t) {
         place: p+1,
         time: t,
         mybell: mine,
-        scheduled: true
+        scheduled: true,
+        special: mine //temporary testing
       };
       if (mine && !simopts.standbehind && rownum === 0 && p === 0) {
         //if I have the treble and this is the very first blow
@@ -1904,32 +1913,37 @@ function scheduleRing(p, t) {
         //o.scheduled = false;
         //o.diff = 0;
       }
-      if (mine && !myrowtimes[rownum].scheduled) {
-        myrowtimes[rownum].scheduled = t;
-      }
-      if (p === 0) {
-        let time = t;
-        if (rownum > 0 && myrowtimes[rownum-1].place === numbells-1) time += delay;
-        rowstartqueue.push({bell: arr[0], time: time, mybell: mine, rownum: rownum});
-      }
+      
       if (ringingstroke === -1) {
         o.place += numbells;
         o.time += 13*simopts.duration/21;
       } else {
         o.time += 9*simopts.duration/21;
       }
-      //temporary testing
-      if (mine) {
-        o.special = true;
-        ringingdata.scheduled.push(t);
-      }
       soundqueue.push(o);
+      //
+      if (mine) {
+        //diff between row to row schedule and place to place schedule
+        let diff = myrowtimes[rownum].scheduled ? myrowtimes[rownum].scheduled - t : null;
+        tempdiffs.push(diff);
+        //calculate time for my next strike
+        let nextrow = rownum+1;
+        if (nextrow === rowArray.length) {
+          //[to do] maybe set aside data here, if ringing is continuing?
+          nextrow = (!simopts.stopatrounds || roundscount <= simopts.nthrounds) ? simopts.roundsrows : -1;
+        }
+        if (nextrow > -1) {
+          let d = myrowtimes[nextrow].place - p;
+          let nexttime = t + speed + delay*d + calcnextdelay(ringingstroke);
+          myrowtimes[nextrow].scheduled = nexttime;
+        }
+      }
+      
     }
     //clear "treble's going"
     if (rownum === 0 && p === 0) {
       console.log("first bell");
       callqueue.push({call: "", time: t, rownum: rownum});
-      actualposition.rowstart = t;
     }
     //schedule first call
     if (rownum === simopts.roundsrows-2 && p === 1 && firstcall) {
@@ -1971,6 +1985,8 @@ function animater() {
     lastcall = call;
     lastcallrow = callrow;
   }
+  /*
+  //[to do] I do need to figure out a way to reset the rowarray if it's repeated
   let starto;
   while (rowstartqueue.length && rowstartqueue[0].time < currentTime) {
     starto = rowstartqueue.shift();
@@ -1990,6 +2006,7 @@ function animater() {
     actualposition.rowstart = currentTime;
     //console.log("row "+starto.rownum+" starting");
   }
+  */
   
   //feedback stuff
   let soundmark = soundplace;
@@ -2154,7 +2171,7 @@ function pull(obj, t) {
       
       //[to do] stuff to do if it's my bell
       if (playing && mbell) {
-        ringingdata.actual.push(t ? t : now);
+        //ringingdata.actual.push(t ? t : now);
         //need some of this whether I'm standing behind or not
         //indicate my bell has been rung, to prevent waiting
         /*
@@ -2240,7 +2257,7 @@ function pull(obj, t) {
     if (waiting) {
       //either user has the treble and needs to start everything, or "wait for human" is on and they are late
       nextBellTime = Math.max(audioCtx.currentTime, nextBellTime); //waiting === true ? now+delay : 
-      if (waiting === true) actualposition.rowstart = now;
+      //if (waiting === true) actualposition.rowstart = now;
       waiting = false;
       scheduler();
     }
