@@ -1907,7 +1907,7 @@ function scheduleRing(p, t) {
         time: t,
         mybell: mine,
         scheduled: true,
-        special: mine //temporary testing
+        //special: mine //temporary testing
       };
       if (mine && !simopts.standbehind && rownum === 0 && p === 0) {
         //if I have the treble and this is the very first blow
@@ -2038,7 +2038,7 @@ function animater() {
         marker = {row: soundrow, mark: soundmark, mine: o.mybell};
       }
     } else {
-      /*
+      ///*
       let increment = 660/(2*numbells-1);
       marker = {row: soundrow, mark: o.place, mine: true};
       let d = o.rownum - handstrokerow;
@@ -2046,7 +2046,7 @@ function animater() {
         marker.row = soundrow === 1 ? 2 : 1;
       }
       marker.left = -8 + increment*(o.place-1) + increment*o.diff/delay;
-      */
+      //*/
     }
   }
 
@@ -2304,6 +2304,7 @@ function pull(obj, t) {
 
 //given a row number (where the user has just rung), update visual information
 function updatedisplay(rn) {
+  let bell = mybells[0];
   let next = rn+1;
   if (next === rowArray.length && (!simopts.stopatrounds || roundscount <= simopts.nthrounds)) {
     //[to do] this would probably be a good place to reset things???
@@ -2315,7 +2316,7 @@ function updatedisplay(rn) {
     let p = myrowtimes[next].place;
 
     if (simopts.highlightunder) {
-      let n = p > 0 ? nextrow[p-1][0] : p === 0 ? obj.bell : null;
+      let n = p > 0 ? nextrow[p-1][0] : p === 0 ? bell : null;
       if (n) highlight(n);
     } else if (simopts.fadeabove) {
       let fade = p > -1 ? nextrow.slice(p+1).map(a => a[0]) : [];
@@ -2324,7 +2325,7 @@ function updatedisplay(rn) {
 
     if (simopts.displayplace) {
       let b = p+1;
-      $("#instruct"+obj.bell).text(b === 0 ? "???" : placeName(b));
+      $("#instruct"+bell).text(b === 0 ? "???" : placeName(b));
     }
     //[to do] instructions
   }
