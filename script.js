@@ -1521,7 +1521,7 @@ function routersimulator(title) {
   //set "mybell" if auto?
   if (!queryobj.blueBell || queryobj.blueBell === "auto") {
     let blue = chooseworking(1);
-    blueBell = blue[0];
+    blueBell = blue[0] || 1;
   } else {
     blueBell = Number(queryobj.blueBell);
   }
@@ -3609,18 +3609,21 @@ function findbypn(pn, pnstage) {
 //n will be 1 if description is being shown, otherwise 2
 //allows one working bell from each cycle if there is more than one working cycle
 //attempts to choose palindromic bell
+//if they're all hunt bells, tries to choose palindromic?
 function chooseworking(n) {
   let used = [];
   method.hunts.forEach(b => used.push(b));
-  let bell;
+  let bell = [stage];
+  let pal = testlastpn(method.plainPN[method.plainPN.length-1]);
   if (used.length < stage) {
-    let pal = testlastpn(method.plainPN[method.plainPN.length-1]);
     
     if (pal && !used.includes(pal) && (n === 1 || method.pbOrder.length === 1)) {
       bell = [pal];
     } else {
       bell = n === 1 ? [method.pbOrder[0][0]] : method.pbOrder.map(a => a[0]) ;
     }
+  } else if (pal) {
+    bell = [pal];
   }
   return bell;
 }
