@@ -171,16 +171,18 @@ var listeners = [
 ];
 //map of rowArray, objects contain rownum which is INDEX, not rowArray rowNum, place of mybell (0-indexed)
 var myrowtimes;
+var mylasttime;
 var myqueue = [];
 var myrow = 0;
 var tempdiffs = [];
 //saving timing data
 var ringingdata = {scheduled: [], actual: []};
+var myringingdata = [];
 
 
 
 $(function(){
-  console.log("test my ringing");
+  //console.log("test my ringing");
   window.location.hash = "";
   //disable gridgrid input elements
   changegridtype();
@@ -1742,11 +1744,14 @@ function setdur(s,i) {
 function resetsimulator() {
   if (!$("#reset").hasClass("disabled")) {
     $("#reset").addClass("disabled");
+    $("#start").removeClass("disabled");
     $("#display,#callcontainer,.instruct").text("");
+    $(".temporarydisable").prop("disabled", false).removeClass("temporarydisable");
     
     //set bells at hand
-    for (let i = 1; i <= numbells; i++) {
-      pull({bell: i, stroke: -1},audioCtx.currentTime+i*delay);
+    let backbells = currentbells.filter(b => b.stroke === -1).reverse();
+    for (let i = 0; i < backbells.length; i++) {
+      pull({bell: backbells[i].num, stroke: -1},audioCtx.currentTime+i*delay);
     }
     //reset things
     rownum = 0;
@@ -1763,23 +1768,27 @@ function resetsimulator() {
     soundqueue = [];
     resetsoundline(1);
     resetsoundline(2);
-    ringingdata = {scheduled: [], actual: []};
-    actualposition = {rep: 0, rownum: 0};
-    rowstartqueue = [];
+    myringingdata = [];
     rowArray.forEach(row => {
       row.row.forEach(a => {
         if (a.length === 2) a.pop(); 
       });
     });
-    myqueue = [];
     myrow = 0;
-    tempdiffs = [];
+    
     //[to do] course order sally stuff
+
+    //temporary or uncertain
+    tempdiffs = [];
+    ringingdata = {scheduled: [], actual: []};
+    actualposition = {rep: 0, rownum: 0};
+    rowstartqueue = [];
+    myqueue = [];
   }
 }
 
 function playpauseclick() {
-  if (!playing) {
+  if (!playing && rownum === 0) {
     treblesgoing();
   } else {
     thatisall();
@@ -1787,12 +1796,14 @@ function playpauseclick() {
 }
 
 //start
+//i've decided you can only start from the beginning
 function treblesgoing() {
   playing = true;
   $("#start").text("Stop");
   $("#reset").addClass("disabled");
   //[to do] need to distinguish already-disabled inputs
   //disable everything
+  $("input:enabled,select:enabled").addClass("temporarydisable").prop("disabled", true);
   //$("#options input").prop("disabled", true);
 
   //set values
@@ -1804,6 +1815,7 @@ function treblesgoing() {
     return o;
   });
   nextBellTime = audioCtx.currentTime;
+  mylasttime = nextBellTime;
   if (rownum === 0 && (!mybells.includes(1) || simopts.standbehind)) {
     ringingplace = -2;
     myrowtimes[0].scheduled = nextBellTime + (myrowtimes[0].place+2)*delay;
@@ -1854,6 +1866,8 @@ function nextPlace() {
       let o = {place: numbells*2+1, time: nextBellTime-delay, scheduled: true};
       if (rownum === rowArray.length-1 && thatsall) {
         o.thatsall = true;
+        o.time += 3*delay;
+        //allow extra time in case the user is tenor and is late on the last blow
       }
       soundqueue.push(o);
       
@@ -1873,6 +1887,11 @@ function nextPlace() {
       if (!thatsall) {
         rowArray[simopts.roundsrows].row.forEach(a => {
           if (a.length === 2) a.pop();
+        });
+        myringingdata.push(...myrowtimes.slice(simopts.roundsrows,-3));
+        [simopts.roundsrows, simopts.roundsrows+1].forEach(rn => {
+          let sub = {rownum: rn, place: myrowtimes[rn].place};
+          myrowtimes.splice(rn, 1, sub);
         });
       }
     }
@@ -1988,6 +2007,10 @@ function animater() {
     lastcall = call;
     lastcallrow = callrow;
   }
+  //end it if the user seems to be gone?
+  if (currentTime-mylasttime > 20) {
+    thatisall();
+  }
   /*
   //[to do] I do need to figure out a way to reset the rowarray if it's repeated
   let starto;
@@ -2092,9 +2115,10 @@ function thatisall() {
   waiting = false;
   clearTimeout(timeout);
   cancelAnimationFrame(animrequest);
-  $("#start").text("Start");
+  $("#start").text("Start").addClass("disabled");
   $("#reset").removeClass("disabled");
-  //[to do] enable inputs again...
+  //[to do] enable inputs again...but only the form inputs...
+  $("#formform .temporarydisable").prop("disabled", false).removeClass("temporarydisable");
 }
 
 
@@ -2104,7 +2128,7 @@ function thatisall() {
 //ring with keyboard
 function keyring(e) {
   let bell = mbells.find(o => o.keys.includes(e.key));
-  if (bell && !bell.ringing && !keysdown.includes(e.key) && !simopts.standbehind) {
+  if (bell && !bell.ringing && !keysdown.includes(e.key) && (!playing || !simopts.standbehind)) {
     keysdown.push(e.key);
     let stroke = currentbells.find(b => b.num === bell.num).stroke;
     let o = {bell: bell.num, stroke: stroke};
@@ -2130,8 +2154,10 @@ function emitring(e) {
   } else if ((this.id.startsWith("tail") || this.id.startsWith("back")) && bell.stroke === -1) {
     o.stroke = -1;
   }
-
-  pull(o);
+  //if you've given the robot your bell, don't interfere!
+  if (!playing || !simopts.standbehind) {
+    pull(o);
+  }
 }
 
 //adjust cursor on bell rope
@@ -2199,10 +2225,11 @@ function pull(obj, t) {
       
       //[to do] stuff to do if it's my bell
       if (playing && !t) {
+        mylasttime = now;
 
         //if I'm starting this whole thing, this blow won't be scheduled, otherwise it should be???
         let diff = waiting === true ? 0 : now-myrowtimes[myrow].scheduled;
-        tempdiffs.push(diff);
+        //tempdiffs.push(diff);
         let wrongrow = Math.abs(diff) > speed/2;
         if (wrongrow) console.log("myrow incorrect?? or very early??");
         //assuming this is the right row, check if I'm on the right stroke
@@ -2309,6 +2336,17 @@ function updatedisplay(rn) {
   if (next === rowArray.length && (!simopts.stopatrounds || roundscount <= simopts.nthrounds)) {
     //[to do] this would probably be a good place to reset things???
     next = simopts.roundsrows;
+    myringingdata.push(...myrowtimes.slice(-3));
+    for (let i = next+1; i < rowArray.length; i++) {
+      let row = rowArray[i];
+      row.row.forEach(a => {
+        if (a.length === 2) a.pop(); 
+      });
+      if (i > next+1) {
+        let sub = {rownum: i, place: myrowtimes[i].place};
+        myrowtimes.splice(i, 1, sub);
+      }
+    }
   }
   myrow = next;
   if (rowArray[next]) {
@@ -2343,9 +2381,10 @@ function findmyplacearr(rn) {
   return rowArray[rn].row.find(a => a[0] === mybells[0]);
 }
 
+//not using
 function tracktime() {
   let t = audioCtx.currentTime;
-  if (playing) ringingdata.actual.push(t);
+  //if (playing) ringingdata.actual.push(t);
 }
 
 //given animation event find the buffer to play
