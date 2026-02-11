@@ -2526,7 +2526,7 @@ function simoptionschange(e) {
   let inputtype = $(this).attr("type");
   if (inputtype === "checkbox") {
     simopts[this.id] = $(this).is(":checked");
-  } else if (this.id != "mykeys") {
+  } else if (!["mykeys","zoom"].includes(this.id)) {
     simopts[this.id] = Number($(this).val());
   }
   /*
