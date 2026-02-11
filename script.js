@@ -1486,6 +1486,8 @@ function buildrowarr() {
 
 function routersimulator(title) {
   $("#simulatorcontainer h1").text(title);
+  simopts.zoom = 0;
+  $("#zoom").val(0);
   $("#myrope option").remove();
   for (let i = 1; i <= numbells; i++) {
     $("#myrope").append(`<option value="${i}">${i}</option>`);
@@ -2651,7 +2653,7 @@ function simoptionschange(e) {
           $("#chute"+i).css("transform", "translateZ("+(change + num)+"px)");
         }
       }
-      simopts.zoom = max;
+      simopts.zoom = to;
       break;
   }
 }
