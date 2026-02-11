@@ -1866,7 +1866,7 @@ function nextPlace() {
       let o = {place: numbells*2+1, time: nextBellTime-delay, scheduled: true};
       if (rownum === rowArray.length-1 && thatsall) {
         o.thatsall = true;
-        o.time += 3*delay;
+        o.time += 3*delay + simopts.duration/2;
         //allow extra time in case the user is tenor and is late on the last blow
       }
       soundqueue.push(o);
@@ -2536,6 +2536,7 @@ function simoptionschange(e) {
     "waitforgaps"
     "standbehind"
     "melouder"
+    "feedback"
   */
   if (simopts.standbehind) {
     //no waiting
@@ -2616,11 +2617,41 @@ function simoptionschange(e) {
       b.keys = $(this).val();
       break;
     case "feedback":
-      //[to do] need to actually add this???
-      //should I disable this if waiting is on?
+      
       break;
-    case "left-right": case "up-down": case "zoom": case "depth":
-      //[to do] adjust perspective
+    case "left-right": case "up-down":
+      
+      let origin = $("#bells").css("-webkit-perspective-origin");
+      if (origin) {
+        let orig = origin.slice(0,-2).split("px ").map(n => Number(n));
+        switch (this.id) {
+          case "left-right":
+            orig[0] = 600 - Number(this.value);
+            break;
+          case "up-down":
+            orig[1] = this.value;
+            break;
+        }
+        $("#bells").css("-webkit-perspective-origin", orig.join("px ")+"px");
+      }
+      break;
+    case "depth":
+      $("#bells").css("-webkit-perspective", (1150 - this.value) + "px");
+      break;
+    case "zoom":
+      let to = Number(this.value);
+      let change = to - simopts.zoom;
+      let max = 0;
+      for (let i = 1; i <= numbells; i++) {
+        let current = $("#chute"+i).css("transform");
+        if (current) {
+          let arr = current.split(", ");
+          let num = arr.length > 6 ? Number(arr[arr.length-2]) : 0;
+          max = Math.max(max, change+num);
+          $("#chute"+i).css("transform", "translateZ("+(change + num)+"px)");
+        }
+      }
+      simopts.zoom = max;
       break;
   }
 }
