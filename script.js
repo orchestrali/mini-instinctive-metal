@@ -1839,7 +1839,7 @@ function treblesgoing() {
   
 }
 
-//calculate the time between pulling the last bell of one stroke and pulling the first bell of the next (different from time between sounds)
+//calculate the time between pulling the last bell of one stroke (input "stroke") and pulling the first bell of the next (different from time between sounds)
 function calcnextdelay(stroke) {
   let currentfraction = stroke === 1 ? 11 : 14;
   let currentdiff = currentfraction/21 * simopts.duration;
@@ -1882,6 +1882,14 @@ function nextPlace() {
     ringingstroke *= -1;
     rownum++;
     currentcall = rowArray[rownum] && rowArray[rownum].call ? rowArray[rownum].call : " ";
+
+    //if this is the last time through an odd number of rows and we're on a handstroke...
+    if (rownum === simopts.roundsrows && simopts.stopatrounds && roundscount === simopts.nthrounds-1 && rowArray.length%2 === 1 && ringingstroke === 1) {
+      let penult = rowArray[rowArray.length-1];
+      let last = {rowNum: penult.rowNum+1, row: penult.bells.map(b => [b]), bells: penult.bells};
+      myrowtimes.push({rownum: rowArray.length, place: last.bells.indexOf(mybells[0])});
+      rowArray.push(last);
+    }
 
     if (rownum === rowArray.length-2) {
       //nearing end
@@ -2211,8 +2219,8 @@ function pull(obj, t) {
       
       bell.stroke = obj.stroke * -1;
       
-      //[to do] stuff to do if it's my bell
-      if (playing && !t) {
+      //stuff to do if it's my bell
+      if (playing && !t && myrowtimes[myrow]) { //in case myrow gets weird...
         mylasttime = now;
 
         //if I'm starting this whole thing, this blow won't be scheduled, otherwise it should be???
@@ -2224,7 +2232,7 @@ function pull(obj, t) {
         let polarity = checkrowstroke(rownum, ringingstroke, false);
         let mystroke = checkrowstroke(myrow, obj.stroke, !polarity);
         if (!mystroke) console.log("wrong stroke??");
-
+        //[to do] maybe display something for some cases of being on the wrong stroke?
         let repeat = myrowtimes[myrow].actual;
         if (repeat) console.log("already rung this row??");
 
@@ -2252,58 +2260,7 @@ function pull(obj, t) {
           updatedisplay(myrow);
         }
         
-        /*
-        let currentstroke = checkcurrentstroke();
-        let strokerung = currentstroke;
-        let rn = actualposition.rownum;
-        //console.log("actual row? "+rn);
-        let arr = findmyplacearr(rn);
-        if (currentstroke != obj.stroke) {
-          //if my stroke doesn't match this row, try previous and next rows
-          let i = rn + (arr[1] ? 1 : -1);
-          //console.log("row to check: "+i);
-          if (i === rowArray.length && simopts.nthrounds > actualposition.rep) i = simopts.roundsrows;
-          if (rowArray[i]) {
-            rn = i;
-            arr = findmyplacearr(i);
-          }
-          strokerung *= -1;
-        }
-        if (arr[1]) {
-          //I think the remaining ways this can happen are:
-          //SECOND extra ring this row! can ignore
-          //there is no next row
-          //I think I have accounted for repeating the course
-          rn = -1;
-        }
-        arr[1] = true;
-        //console.log("my row: "+rn);
-
-        if (rn > -1) {
-          
-          myrowtimes[rn].actual = now;
-          let scheduled = (rn === 0 && myrowtimes[rn].place === 0) ? now : myrowtimes[rn].scheduled;
-          let p1 = myrowtimes[rn].place;
-          //add to soundqueue
-          if (myrowtimes[rn].scheduled && !simopts.standbehind) {
-            let o = {
-              rownum: rn,
-              place: p1+1,
-              time: now,
-              mybell: true,
-              diff: now-scheduled
-            };
-            if (strokerung === -1) {
-              o.place += numbells;
-              o.time += 13*simopts.duration/21;
-            } else {
-              o.time += 9*simopts.duration/21;
-            }
-            soundqueue.push(o);
-          }
-          
-        }
-        */
+        
       }
     }
 
