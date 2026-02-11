@@ -153,6 +153,7 @@ var soundqueue = [];
 var soundrow = 1;
 var soundplace;
 var handstrokerow = 0;
+var endtime;
 
 var mybells = [];
 var mbells = [];
@@ -1766,6 +1767,7 @@ function resetsimulator() {
     soundrow = 1;
     soundplace = 0;
     handstrokerow = 0;
+    endtime = null;
     callqueue = [];
     soundqueue = [];
     resetsoundline(1);
@@ -1868,11 +1870,12 @@ function nextPlace() {
       let o = {place: numbells*2+1, time: nextBellTime-delay, scheduled: true};
       if (rownum === rowArray.length-1 && thatsall) {
         o.thatsall = true;
-        o.time += 3*delay + simopts.duration/2;
+        endtime = o.time + 3*delay + simopts.duration/2;
         //allow extra time in case the user is tenor and is late on the last blow
+        //delay doesn't matter if it's ahead in the queue!
+      } else {
+        soundqueue.push(o);
       }
-      soundqueue.push(o);
-      
     } 
     ringingplace = 0;
     ringingstroke *= -1;
@@ -2026,10 +2029,14 @@ function animater() {
   if (nexttime && nexttime + speed/2 < currentTime) {
     updatedisplay(myrow);
   }
+
+  let ending = endtime && endtime < currentTime;
+  if (ending) {
+    thatisall();
+  }
   
   //feedback stuff
   let soundmark = soundplace;
-  let ending;
   let o;
   let marker;
   if (soundqueue[0] && soundqueue[0].time < currentTime) {
@@ -2039,7 +2046,7 @@ function animater() {
   if (o) {
     if (o.scheduled) {
       soundmark = o.place;
-      ending = o.thatsall;
+      //ending = o.thatsall;
       if (soundmark < numbells*2+1 && (!o.mybell || simopts.standbehind || o.special)) {
         marker = {row: soundrow, mark: soundmark, mine: o.mybell};
       }
@@ -2067,19 +2074,15 @@ function animater() {
     //o is scheduled and new
     let soundline = "#sound-line"+soundrow;
     if (soundmark > (numbells*2)) {
-      if (ending) {
-        console.log(o.time);
-        thatisall();
-      } else {
-        handstrokerow += 2;
-        if (handstrokerow >= rowArray.length) {
-          let d = handstrokerow - rowArray.length;
-          handstrokerow = simopts.roundsrows + d;
-        }
-        let other = soundrow === 1 ? 2 : 1;
-        soundrow = other;
-        resetsoundline(soundrow);
+      handstrokerow += 2;
+      if (handstrokerow >= rowArray.length) {
+        let d = handstrokerow - rowArray.length;
+        handstrokerow = simopts.roundsrows + d;
       }
+      let other = soundrow === 1 ? 2 : 1;
+      soundrow = other;
+      resetsoundline(soundrow);
+      
     }
 
     //start line
