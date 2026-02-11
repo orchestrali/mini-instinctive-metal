@@ -2016,7 +2016,7 @@ function animater() {
     lastcallrow = callrow;
   }
   //end it if the user seems to be gone?
-  if (currentTime-mylasttime > 20) {
+  if (!simopts.standbehind && currentTime-mylasttime > 20) {
     thatisall();
   }
   
@@ -2549,6 +2549,7 @@ function simoptionschange(e) {
     //no waiting
     $("#waitforgaps").prop("checked", false);
     simopts.waitforgaps = false;
+    $("#feedback").prop("disabled", false);
   }
   
   switch (this.id) {
