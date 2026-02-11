@@ -1701,6 +1701,7 @@ function buildtower(start, n) {
 }
 
 //copied from bellmaster, some differences
+//num is the bell number, i is the index, starting with rope in front and going clockwise
 function position(i, num) {
   let radius = 270; //update this for non-div by 4 stages ??? what do I mean by this
   let zrad = 270; //diff ????
@@ -1711,7 +1712,9 @@ function position(i, num) {
   let bell = currentbells.find(b => b.num === num);
   bell.left = left;
   bell.z = z;
-  $("#chute"+num).css({"left": left+"px", transform: "translateZ("+z+"px)"});
+  let zindex = 20 - Math.min(i,Math.abs(numbells-i))*2;
+  bell.zindex = zindex;
+  $("#chute"+num).css({"left": left+"px", transform: "translateZ("+z+"px)", "z-index": zindex});
 }
 
 function addrope(num) {
@@ -2445,7 +2448,7 @@ function assign(n) {
       document.getElementById(l.id+n).addEventListener(l.event, l.f);
     }
   });
-  $("#chute"+mybells[0]).css("z-index", 1);
+  //$("#chute"+mybells[0]).css("z-index", 1);
   $("div.instruct").remove();
   if (n) {
     mybells = [n];
@@ -2455,7 +2458,7 @@ function assign(n) {
     keys += "j";
     mbells = [{num: n, keys: keys}];
     $("#mykeys").val(keys);
-    $("#chute"+mybells[0]).css("z-index", 20);
+    //$("#chute"+mybells[0]).css("z-index", 20);
 
     //rotate ropes
     let diff1 = blueBell - n;
@@ -2499,17 +2502,20 @@ function rotate(dir) {
     let bell = currentbells.find(b => b.num === i);
     let o = {
       left: bell.left,
-      z: bell.z
+      z: bell.z,
+      zindex: bell.zindex
     }
     pos.push(o);
   }
 
   dir === 1 ? pos.push(pos.shift()) : pos.unshift(pos.pop());
   for (let i = 1; i <= numbells; i++) {
+    let o = pos[i-1];
     let bell = currentbells.find(b => b.num === i);
-    $("#chute"+i).css({"left": pos[i-1].left+"px", transform: "translateZ("+pos[i-1].z+"px)"});
-    bell.left = pos[i-1].left;
-    bell.z = pos[i-1].z;
+    $("#chute"+i).css({"left": o.left+"px", transform: "translateZ("+o.z+"px)", "z-index": o.zindex});
+    for (let key in o) {
+      bell[key] = o[key];
+    }
   }
 }
 
