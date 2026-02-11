@@ -478,9 +478,10 @@ function fillform(obj) {
 
   numtexts.forEach(t => {
     if (t === "tenors" && obj[t]) {
-      //currently only staff
+      //staff or simulator
       //obj.type (var type won't be set correctly yet)
-      $("#stenors").val(obj[t]).change();
+      let tenorids = {staff: "#stenors", simulator: "#mtenors"};
+      $(tenorids[obj.type]).val(obj[t]).change();
     }
   });
 
