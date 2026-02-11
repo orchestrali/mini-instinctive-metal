@@ -2203,7 +2203,7 @@ function pull(obj, t) {
 
     if (bell && bell.stroke === obj.stroke) { //if strokes are consistent
       let mbell = mbells.find(b => b.num === obj.bell);
-      if (mbell) mbell.ringing = true;
+      //if (mbell) mbell.ringing = true;
       
       //actually pull the rope
       t ? document.getElementById(id).beginElementAt(t-now) : document.getElementById(id).beginElement();
