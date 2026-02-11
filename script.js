@@ -1553,6 +1553,7 @@ function routersimulator(title) {
   }
   method.courseorder ? $("#li-cosallies").show() : $("#li-cosallies").hide();
   //which things need resetting?
+  resetsimulator();
   $("#simulatorcontainer").show();
 }
 
