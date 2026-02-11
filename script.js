@@ -90,6 +90,7 @@ var currentbells = [];
 //audio setup
 var audioCtx;
 var gainNode;
+
 //all the options
 var simopts = {
   zoom: 0,
@@ -128,9 +129,6 @@ var ringingstroke = 1;
 var rownum = 0;
 var roundscount = 0;
 
-var actualposition = {rep: 0, rownum: 0};
-//times when the first *pull* of the row is scheduled to start
-var rowstartqueue = [];
 
 var timeout;
 var animrequest;
@@ -172,13 +170,20 @@ var listeners = [
 ];
 //map of rowArray, objects contain rownum which is INDEX, not rowArray rowNum, place of mybell (0-indexed)
 var myrowtimes;
+//last time the user rang during play
 var mylasttime;
-var myqueue = [];
 var myrow = 0;
-var tempdiffs = [];
+
 //saving timing data
-var ringingdata = {scheduled: [], actual: []};
 var myringingdata = [];
+
+//temporary or uncertain
+var myqueue = [];
+var tempdiffs = [];
+var ringingdata = {scheduled: [], actual: []};
+var actualposition = {rep: 0, rownum: 0};
+//times when the first *pull* of the row is scheduled to start
+var rowstartqueue = [];
 
 
 
@@ -1543,15 +1548,27 @@ function routersimulator(title) {
       break;
   }
   $("#bells").css("-webkit-perspective-origin", perspective);
-  //assign bell
-  assign(blueBell);
-  //set up coursing order
-  if (method.leadHeadCode && method.hunts.length === 1) {
+  //set up coursing order - need to do this before assigning the bell
+  if (method.leadHeadCode) { //[to do] modify this for touches: && method.hunts.length === 1 
     let co = homecourseorder(method.stage);
     co.unshift(method.stage);
+    if (method.hunts.length === 2) {
+      let i = co.indexOf(2);
+      co.splice(i, 1);
+    }
     method.courseorder = co;
   }
-  method.courseorder ? $("#li-cosallies").show() : $("#li-cosallies").hide();
+  if (method.courseorder) {
+    $("#li-cosallies").show();
+  } else {
+    $("#cosallies").prop("checked", false);
+    simopts.cosallies = false;
+    $("#li-cosallies").hide();
+  }
+  
+  //assign bell
+  assign(blueBell);
+  
   //which things need resetting?
   resetsimulator();
   $("#simulatorcontainer").show();
@@ -2459,8 +2476,10 @@ function assign(n) {
     if (simopts.displayplace) {
       $("#chute"+n).append(`<div id="instruct${n}" class="instruct"></div>`);
     }
+    //handles fading + displaying place
     updatedisplay(-1);
-    //[to do] co sally stuff
+    //co sally stuff & solid sallies
+    sallycolor();
   }
 }
 
