@@ -54,8 +54,10 @@ const oldformkeys = {
 const keysforall = ["stage", "lookup", "methodClass", "methodName", "placeNotation", "type"];
 const typekeys = {
   grid: ["gridtype", "pn", "numbers", "blueBell", "describe", "gridcolors"],
-  staff: ["blueBell", "tenors", "gap", "includeTime", "timesig", "keysig", "actTenor", "onlyblue", "mobile"]
+  staff: ["blueBell", "tenors", "gap", "includeTime", "timesig", "keysig", "actTenor", "onlyblue", "mobile"],
+  simulator: ["tenors"]
 };
+//[to do] maybe save more simulator options?
 
 //strategies for choosing method/comp
 //default "name", others "pn" and "complib"
@@ -364,8 +366,8 @@ function getqueryparams() {
 //[to do] this needs lots of updates as I restore things!!
 function checkqueryparams(obj, oldobj) {
   let problem;
-  //currently only grid or staff type
-  if (!obj.type || !["grid", "staff"].includes(obj.type)) {
+  //added simulator back
+  if (!obj.type || !["grid", "staff", "simulator"].includes(obj.type)) {
     //can't do this (yet)
     problem = "type";
     
@@ -547,6 +549,9 @@ function stagechange() {
 
   $("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
   typeinputs();
+  //disable simulator if stage is too high
+  let simtypeli = $("#type li:last-child");
+  stage > 12 ? simtypeli.addClass("disabled") : simtypeli.removeClass("disabled");
   
   //remove methods from name dropdown
   $('ul#methodList').children().detach();
@@ -647,9 +652,11 @@ function changestrategy() {
 }
 
 function typeliclick(e) {
-  let id = $(e.currentTarget).find("input").attr("id");
-  $("#"+id).prop("checked", true);
-  typechange();
+  if (!$(e.currentTarget).hasClass("disabled")) {
+    let id = $(e.currentTarget).find("input").attr("id");
+    $("#"+id).prop("checked", true);
+    typechange();
+  }
 }
 
 function typeinputs() {
@@ -685,6 +692,7 @@ function typechange() {
   
   //remove higher stages for graph and simulator
   //[to do] I don't appear to be dealing with people having selected one of those stages
+  //have dealt with simulator, but not sure about query params
   $("#stage option:nth-child(n+11)").prop("disabled", ["graph", "simulator"].includes(type));
 }
 
@@ -1693,7 +1701,7 @@ function buildtower(start, n) {
 
 //copied from bellmaster, some differences
 function position(i, num) {
-  let radius = 270; //[to do] update this for non-div by 4 stages
+  let radius = 270; //update this for non-div by 4 stages ??? what do I mean by this
   let zrad = 270; //diff ????
   let angle = 2*Math.PI/numbells*i;
   //adjustment here for user ringing two bells
@@ -1823,7 +1831,7 @@ function treblesgoing() {
   playing = true;
   $("#start").text("Stop");
   $("#reset").addClass("disabled");
-  //[to do] need to distinguish already-disabled inputs
+  //need to distinguish already-disabled inputs
   //disable everything
   $("input:enabled,select:enabled").addClass("temporarydisable").prop("disabled", true);
   //$("#options input").prop("disabled", true);
@@ -2130,7 +2138,7 @@ function thatisall() {
   cancelAnimationFrame(animrequest);
   $("#start").text("Start").addClass("disabled");
   $("#reset").removeClass("disabled");
-  //[to do] enable inputs again...but only the form inputs...
+  //enable inputs again...but only the form inputs...
   $("#formform .temporarydisable").prop("disabled", false).removeClass("temporarydisable");
 }
 
@@ -2558,7 +2566,7 @@ function simoptionschange(e) {
       sallycolor();
       break;
     case "highlightunder": case "fadeabove":
-      //[to do] fade ropes, disable the other
+      //fade ropes, disable the other
       $(".chute").removeClass("fade highlight");
       if (simopts[this.id]) {
         $(".following input").prop("disabled", true);
