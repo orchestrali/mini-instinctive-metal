@@ -159,8 +159,8 @@ var mybells = [];
 var mbells = [];
 var keysdown = [];
 var listeners = [
-  {id: "hand15b", event: "endEvent", f: endpull},
-  {id: "back14b", event: "endEvent", f: endpull},
+  {id: "hand13b", event: "endEvent", f: endpull},
+  {id: "back12b", event: "endEvent", f: endpull},
   {id: "sally", event: "mouseover", f: pointer},
   {id: "sally", event: "click", f: emitring},
   {id: "tail", event: "mouseover", f: pointer},
@@ -2203,7 +2203,7 @@ function pull(obj, t) {
 
     if (bell && bell.stroke === obj.stroke) { //if strokes are consistent
       let mbell = mbells.find(b => b.num === obj.bell);
-      //if (mbell) mbell.ringing = true;
+      if (mbell) mbell.ringing = true;
       
       //actually pull the rope
       t ? document.getElementById(id).beginElementAt(t-now) : document.getElementById(id).beginElement();
