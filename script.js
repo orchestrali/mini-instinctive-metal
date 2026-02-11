@@ -2068,6 +2068,7 @@ function animater() {
     let soundline = "#sound-line"+soundrow;
     if (soundmark > (numbells*2)) {
       if (ending) {
+        console.log(o.time);
         thatisall();
       } else {
         handstrokerow += 2;
