@@ -1379,7 +1379,7 @@ function resultsrouter(obj) {
       case "simulator":
         soundchecked = 0;
         simtitle = title;
-        
+        checksoundsready();
         break;
     }
     
@@ -1520,6 +1520,7 @@ function buildrowarr() {
 
 
 function routersimulator(title) {
+  console.log("setting up simulator");
   $("#simulatorcontainer h1").text(title);
   simopts.zoom = 0;
   $("#zoom").val(0);
