@@ -465,7 +465,7 @@
     top: 230px;
     width: 600px;
     text-align: center;
-    z-index: 2;
+    z-index: 20;
     transition: 1s linear;
   }
   
