@@ -262,7 +262,7 @@ $(function(){
 
   //prevent duplication in keyboard commands
   $("#options").on("keypress", "input.keyboard", function(e) {
-    if (mbells.find(o => o.keys.includes(e.key))) {
+    if ($(this).val().includes(e.key)) {
       e.preventDefault();
     }
   });
