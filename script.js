@@ -262,7 +262,7 @@ $(function(){
 
   //prevent duplication in keyboard commands
   $("#options").on("keypress", "input.keyboard", function(e) {
-    if (mbells.find(o => o.keys.includes(e.key))) {
+    if ($(this).val().includes(e.key)) {
       e.preventDefault();
     }
   });
@@ -2214,12 +2214,14 @@ function emitring(e) {
 
 //adjust cursor on bell rope
 function pointer(e) {
-  let num = this.id.startsWith("sally") ? Number(this.id.slice(5)) : Number(this.id.slice(4));
-  let bell = currentbells.find(b => b.num === num);
-  if ((this.id.startsWith("sally") && bell.stroke === 1) || (this.id.startsWith("tail") && bell.stroke === -1)) {
-    this.style.cursor = "pointer";
-  } else {
-    this.style.cursor = "auto";
+  if (!playing || !simopts.standbehind) {
+    let num = this.id.startsWith("sally") ? Number(this.id.slice(5)) : Number(this.id.slice(4));
+    let bell = currentbells.find(b => b.num === num);
+    if ((this.id.startsWith("sally") && bell.stroke === 1) || (this.id.startsWith("tail") && bell.stroke === -1)) {
+      this.style.cursor = "pointer";
+    } else {
+      this.style.cursor = "auto";
+    }
   }
 }
 
@@ -2471,7 +2473,7 @@ function assign(n) {
     mybells.forEach(b => {
       document.getElementById(l.id+b).removeEventListener(l.event, l.f);
     });
-    if (n && !simopts.standbehind) {
+    if (n) { //&& !simopts.standbehind
       document.getElementById(l.id+n).addEventListener(l.event, l.f);
     }
   });
