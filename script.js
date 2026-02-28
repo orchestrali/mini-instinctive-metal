@@ -1379,6 +1379,7 @@ function resultsrouter(obj) {
       case "simulator":
         soundchecked = 0;
         simtitle = title;
+        if (!soundsready) $("#loadingdiv").show();
         checksoundsready();
         break;
     }
@@ -1408,6 +1409,7 @@ function checksoundsready() {
     if (soundchecked < 10) {
       setTimeout(checksoundsready, 1000);
     } else {
+      $("#loadingdiv").hide();
       alert("Sorry, there seems to be a problem loading the bell sounds! Try resubmitting the form.");
     }
   }
@@ -1521,6 +1523,7 @@ function buildrowarr() {
 
 function routersimulator(title) {
   console.log("setting up simulator");
+  $("#loadingdiv").hide();
   $("#simulatorcontainer h1").text(title);
   simopts.zoom = 0;
   $("#zoom").val(0);
