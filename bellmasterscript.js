@@ -37,6 +37,7 @@ var nextBellTime = 0.0;
 var mynexttime = 0.0;
 var myqueue = [];
 var timeout;
+var animrequest;
 
 var callqueue = [];
 var placequeue = [];
@@ -55,6 +56,7 @@ var feedback = true;
 var displayplace = false;
 var diffs = [];
 var keepgoing = false;
+var demomode = false;
 
 for (let i = 0; i < bells.length; i++) {
   bells[i].type = "tower";
@@ -103,7 +105,7 @@ $(function() {
 
 
 
-
+//get a file
 async function getFile(audioContext, filepath) {
   try {
     const response = await fetch(filepath);
@@ -117,6 +119,7 @@ async function getFile(audioContext, filepath) {
   }
 }
 
+//set up bell sound
 async function setupSample(i) {
   let arrayBuffer = await getFile(audioCtx, bells[i].url);
   if (arrayBuffer) {
@@ -130,15 +133,14 @@ async function setupSample(i) {
         $("#startbutton").show();
         console.log("finished setting up");
       }
-    }, (e) => { 
-      console.log(e) 
-    });
+    }, (e) => { console.log(e) });
   } else {
     $("#loading").hide();
     //error
   }
 }
 
+//actions for triggering ringing events
 var listeners = [
   //{id: "hand15b", event: "endEvent", f: endpull},
   //{id: "back14b", event: "endEvent", f: endpull},
@@ -180,7 +182,7 @@ function setupRopes(n) {
     document.getElementById(o.id+"3").addEventListener(o.event, o.f);
   });
   $("body").on("keydown", function(e) {
-    if (e.key === "j") {
+    if (e.key === "j" && (!demomode || !playing)) {
       pull(mybell);
     }
   });
@@ -340,7 +342,7 @@ function levelup() {
     
   }
   if (level === 2 && !$("#displayfeedback").length) {
-    $("#instructions p").after('<label for="displayfeedback"><input type="checkbox" id="displayfeedback" name="displayfeedback" checked />show feedback</label>');
+    $("#instructions p").after('<label for="displayfeedback"><input type="checkbox" id="displayfeedback" name="displayfeedback" checked />show feedback</label><label for="demomode"><input type="checkbox" id="demomode" />demo mode (check this to have the computer ring your bell)</label>');
     $("#displayfeedback").on("click", function() {
       feedback = $("#displayfeedback").prop("checked");
       if (!feedback) {
@@ -348,6 +350,9 @@ function levelup() {
       } else {
         $("#visuals").show();
       }
+    });
+    $("#demomode").on("click", function() {
+      demomode = $("#demomode").is(":checked");
     });
   }
   if (level === 12 && !$("#displayplace").length) {
@@ -403,7 +408,7 @@ function treblesgoing() {
   
   if (rownum === 0 && mybell === 1) {
     waiting = true;
-    requestAnimationFrame(animate);
+    animrequest = requestAnimationFrame(animate);
   } else {
     waiting = false;
     mynexttime = audioCtx.currentTime + (mybell-1)*delay;
@@ -412,7 +417,7 @@ function treblesgoing() {
       myqueue = [{stroke: 1, time: mynexttime, place: mybell-1, rownum: 0},{stroke: -1, time: mynexttime+speed-.23*duration, place: mybell-1, rownum: 1}];
     }
     scheduler();
-    requestAnimationFrame(animate);
+    animrequest = requestAnimationFrame(animate);
   }
 }
 
@@ -485,20 +490,22 @@ function nextPlace() {
 function scheduleRing(p, t) {
   if (p > -1) {
     let num = rowArr[rownum].row[p];
-    let bell = num && num.length && num[0] != mybell;
+    let bell = num && num.length;
+    let mine = num[0] === mybell && !demomode;
     
-    if (bell) {
+    if (bell && !mine) {
       pull(num[0],t);
     }
     if (bell || (p === 0 && rownum%2 === 0)) {
-      soundqueue.push({place: p, rownum: rownum, time: t+(stroke === 1 ? 8 : 13)*duration/21});
+      let x = stroke === 1 ? 8 : 13;
+      soundqueue.push({place: p, rownum: rownum, time: t+x*duration/21});
     }
     if (rownum === 0 && p === 0 && roundscount === 0) {
       callqueue.push({call: "", time: t, rownum: rownum});
     }
     
     
-    if (!bell && waitgaps && (!num || !num[1])) {
+    if (mine && waitgaps && (!num || !num[1])) {
       waiting = t;
     } else {
       nextPlace();
@@ -515,7 +522,7 @@ function scheduler() {
   while (nextBellTime < audioCtx.currentTime + schedule && rowArr[rownum] && !waiting) {
     scheduleRing(place, nextBellTime);
   }
-  !waiting && rowArr[rownum] ? timeout = setTimeout(scheduler, lookahead): clearTimeout(timeout);
+  !waiting && rowArr[rownum] ? timeout = setTimeout(scheduler, lookahead) : clearTimeout(timeout);
 }
 
 function animate() {
@@ -566,7 +573,7 @@ function animate() {
     $("#sound-line").css("width", "660px");
   }
   
-  requestAnimationFrame(animate);
+  animrequest = requestAnimationFrame(animate);
   
 }
 
@@ -578,7 +585,9 @@ function triggerpull(e) {
   let n = this.id.startsWith("sally") ? Number(this.id.slice(5)) : Number(this.id.slice(4));
   let bell = bells.find(b => b.num === n);
   if ((bell.stroke === 1 && (this.id.startsWith("sally") || this.id.startsWith("hand"))) || (bell.stroke === -1 && (this.id.startsWith("tail") || this.id.startsWith("back")))) {
-    pull(n);
+    if (!demomode || !playing) {
+      pull(n);
+    }
   }
 }
 
@@ -623,8 +632,10 @@ function pull(n, t) {
           ringtiming = "Late";
           myqueue.shift();
         }
-        $("#feedback").text(ringtiming);
-        $("#feedback").css("opacity", "1");
+        if (!demomode) {
+          $("#feedback").text(ringtiming);
+          $("#feedback").css("opacity", "1");
+        }
         //console.log(ringtiming);
       }
       let i = row.row.findIndex(a => a[0] === n);
@@ -705,6 +716,7 @@ function thatisall() {
   playing = false;
   waiting = false;
   clearTimeout(timeout);
+  cancelAnimationFrame(animrequest);
   setTimeout(function() {
     standbells(1);
   }, 500);
@@ -762,7 +774,7 @@ function ring(e) {
     let x = (Number(bell.left) - 270)/135;
     let z = Number(bell.z)/100;
     pan.push(x, 10, z);
-    
+    //$("#testing").text(bellnum.toString());
     let buffer = bell.buffer;
     playSample(audioCtx, buffer, pan);
   }
@@ -848,3 +860,6 @@ function position(i, num) {
   bell.z = z;
   $("#chute"+num).css({"left": left+"px", transform: "translateZ("+z+"px)"});
 }
+
+
+

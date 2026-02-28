@@ -457,6 +457,8 @@ function apologies(problem, obj) {
 
 //only send an obj here if it has keys
 function fillform(obj) {
+  //console.log(obj);
+  //need to do the text numbers too
   
   selects.forEach(s => {
     //dealing with stage earlier 
@@ -491,7 +493,8 @@ function fillform(obj) {
   });
 
   checked.forEach(c => {
-    $(`input[name="${c}"]`).prop("checked", obj[c]);
+    let check = obj[c] ? true : false;
+    $(`input[name="${c}"]`).prop("checked", check);
     if (["gap", "includeTime"].includes(c)) {
       $(`input[name="${c}"]`).change();
     }
@@ -2972,8 +2975,10 @@ function drawgridsvg(arr, paths, width, x) {
   svg.line(lines, x-2, yinc, width, yinc);
   let stedman = arr.find(r => r.name === "new six");
   let filtered = paths.filter(o => o.color != "red");
-  if (filtered.length && !queryobj.describe && !stedman && gridtype === "gridline") {
-    drawplacebells(width+20, yinc-6, filtered, arr[0].bells);
+  let drawplaces = filtered.length && !queryobj.describe && !stedman && gridtype === "gridline";
+  if (drawplaces) {
+    let y = queryobj.numbers ? yinc-6 : yinc-1;
+    drawplacebells(width+20, y, filtered, arr[0].bells);
   }
   
   for (let i = 1; i < arr.length; i++) {
@@ -2983,8 +2988,9 @@ function drawgridsvg(arr, paths, width, x) {
     }
     if (arr[i].name === "leadhead" && !stedman) {
       svg.line(lines, x-2, y, width, y);
-      if (filtered.length && !queryobj.describe && gridtype === "gridline") {
-        drawplacebells(width+20, y-6, filtered, arr[i].bells);
+      if (drawplaces) {
+        let placey = queryobj.numbers ? y+yinc-6 : y+yinc-2;
+        drawplacebells(width+20, placey, filtered, arr[i].bells);
       }
     }
     if (["b", "s"].includes(arr[i].type)) {
@@ -3445,14 +3451,27 @@ function pnlexer(pn, pnstage) {
   let stagepp = places.slice(0,pnstage);
   let tokens = [];
   let err;
+  let comma = -1;
   
   for (let i = 0; i < pn.length; i++) {
     let token = {
       value: pn[i]
     };
     switch (pn[i]) {
-      case "&": case ",": case "+":
-        token.type = "grouping token";
+      case ",":
+        if (![0,pn.length-1].includes(i) && comma === -1) {
+          token.type = "grouping token";
+          comma = i;
+        } else {
+          err = "comma problem";
+        }
+        break;
+      case "&": case "+":
+        if (i === comma+1) {
+          token.type = "grouping token";
+        } else {
+          err = "can't parse";
+        }
         break;
       case ".":
         token.type = "separator";
@@ -3466,7 +3485,7 @@ function pnlexer(pn, pnstage) {
     }
     if (token.type) {
       tokens.push(token);
-    } else {
+    } else if (!err) {
       err = "invalid character";
     }
   }
@@ -3530,7 +3549,7 @@ function pnNumAbbr(tokens, pnstage) {
       }
       
       //if the value ends with the opposite quality from the stage, add stage to end
-      if (stage%2 != numArr[numArr.length-1] % 2) {
+      if (pnstage%2 != numArr[numArr.length-1] % 2) {
         numArr.push(pnstage);
       }
       t.value = numArr;
@@ -3541,51 +3560,33 @@ function pnNumAbbr(tokens, pnstage) {
 
 function pngrouping(tokens) {
   let groupingString = tokens.filter(t => t.type === "grouping token").map(t => t.value).join("");
-
-  if (!["","+"].includes(groupingString)) {
+  
+  if (!["","+"].includes(groupingString) && groupingString.includes(",")) {
     let groupingTokens = [];
     for (let i = 0; i < tokens.length; i++) {
       if (tokens[i].type === "grouping token") {
         groupingTokens.push({index: i, token: tokens[i].value});
       }
     }
-    let mirrorStart;
-    let mirrorEnd = 0;
-    let insertIndex;
-    let numToReplace;
-    let toBeReversed;
-    switch (groupingString) {
-      case ",":
-        let greater = groupingTokens[0].index > 1;
-
-        mirrorStart = greater ? 0 : 2;
-        mirrorEnd = greater ? groupingTokens[0].index-1 : tokens.length-1;
-        insertIndex = greater ? groupingTokens[0].index+1 : tokens.length;
-        break;
-      case "&,": case "&,+":
-        mirrorStart = groupingTokens[0].index+1;
-        mirrorEnd = groupingTokens[1].index-1;
-        insertIndex = mirrorEnd+2;
-        break;
-      case "+,": case "+,&":
-        let j = groupingString === "+," ? 1 : 2;
-        mirrorStart = groupingTokens[j].index+1;
-        mirrorEnd = tokens.length - 1;
-        insertIndex = tokens.length;
-        break;
-    }
-
-    if (mirrorEnd === 0) {
-      toBeReversed = tokens.slice(mirrorStart);
-    } else {
-      toBeReversed = tokens.slice(mirrorStart, mirrorEnd);
-    }
-
-    toBeReversed.reverse();
-
-    for (let j = 0; j < toBeReversed.length; j++) {
-      tokens.splice(insertIndex+j, 0, toBeReversed[j]);
-    }
+    let commai = groupingString.indexOf(",");
+    let commaj = groupingTokens[commai].index;
+    
+    let segments = [{start: commaj+1, end: tokens.length},{start: 0, end: commaj}];
+    segments.forEach(o => {
+      let first = tokens[o.start];
+      if (first.value != "+") {
+        let start = o.start;
+        if (first.value === "&") start++;
+        let l = o.end-start;
+        if (l > 1) {
+          //mirroring is actually possible
+          let toBeReversed = tokens.slice(start, o.end-1);
+          toBeReversed.reverse();
+          tokens.splice(o.end, 0, ...toBeReversed);
+        }
+      }
+    });
+    
   }
 }
 
