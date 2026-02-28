@@ -85,6 +85,9 @@ var blueBell;
 var bells = [
   {bell: "F4",type: "tower"},{bell: "G4",type: "tower"},{bell: "A4",type: "tower"},{bell: "Bf4",type: "tower"},{bell: "C5",type: "tower"},{bell: "D5",type: "tower"},{bell: "E5",type: "tower"},{bell: "F5",type: "tower"},{bell: "G5",type: "tower"},{bell: "A5",type: "tower"},{bell: "Bf5",type: "tower"},{bell: "C6",type: "tower"}
 ];
+var soundsready;
+var soundchecked = 0;
+var simtitle;
 //sally course order
 var sallycolors = ["#000080","#1a1ad6","#5c5ced","#758de6","#9198bf","#babfdb","#c8e6ce","#a4e0b0","#71d184","#3fa654","#007317"];
 //holder for current sounds
@@ -289,6 +292,7 @@ function getlists() {
         gainNode.gain.value = 0.75;
         $("body").on("click", () => {
           if (audioCtx.state === 'suspended') {
+            console.log("resuming audio");
             audioCtx.resume();
           }
         });
@@ -325,6 +329,7 @@ async function setupSample(i) {
         i++;
         setupSample(i);
       } else {
+        soundsready = true;
         console.log("finished getting sounds");
       }
     }, (e) => { console.log(e) });
@@ -1372,7 +1377,9 @@ function resultsrouter(obj) {
         drawstaff(title);
         break;
       case "simulator":
-        routersimulator(title);
+        soundchecked = 0;
+        simtitle = title;
+        
         break;
     }
     
@@ -1390,6 +1397,19 @@ function resultsrouter(obj) {
     }
     let text = obj.lookup === "name" ? "Method not found" : "Problem with place notation";
     $("#container").append(`<h4>${text}</h4>`);
+  }
+}
+
+function checksoundsready() {
+  if (soundsready) {
+    routersimulator(simtitle);
+  } else {
+    soundchecked++;
+    if (soundchecked < 10) {
+      setTimeout(checksoundsready, 1000);
+    } else {
+      alert("Sorry, there seems to be a problem loading the bell sounds! Try resubmitting the form.");
+    }
   }
 }
 
