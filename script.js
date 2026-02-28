@@ -54,8 +54,10 @@ const oldformkeys = {
 const keysforall = ["stage", "lookup", "methodClass", "methodName", "placeNotation", "type"];
 const typekeys = {
   grid: ["gridtype", "pn", "numbers", "blueBell", "describe", "gridcolors"],
-  staff: ["blueBell", "tenors", "gap", "includeTime", "timesig", "keysig", "actTenor", "onlyblue", "mobile"]
+  staff: ["blueBell", "tenors", "gap", "includeTime", "timesig", "keysig", "actTenor", "onlyblue", "mobile"],
+  simulator: ["tenors"]
 };
+//[to do] maybe save more simulator options?
 
 //strategies for choosing method/comp
 //default "name", others "pn" and "complib"
@@ -78,10 +80,120 @@ var rowArray;
 //individual bell (number) for gridline with describe; may be array otherwise
 var blueBell;
 
+//simulator items
+//objects with sounds and other info
+var bells = [
+  {bell: "F4",type: "tower"},{bell: "G4",type: "tower"},{bell: "A4",type: "tower"},{bell: "Bf4",type: "tower"},{bell: "C5",type: "tower"},{bell: "D5",type: "tower"},{bell: "E5",type: "tower"},{bell: "F5",type: "tower"},{bell: "G5",type: "tower"},{bell: "A5",type: "tower"},{bell: "Bf5",type: "tower"},{bell: "C6",type: "tower"}
+];
+var soundsready;
+var soundchecked = 0;
+var simtitle;
+//sally course order
+var sallycolors = ["#000080","#1a1ad6","#5c5ced","#758de6","#9198bf","#babfdb","#c8e6ce","#a4e0b0","#71d184","#3fa654","#007317"];
+//holder for current sounds
+var currentbells = [];
+//audio setup
+var audioCtx;
+var gainNode;
+
+//all the options
+var simopts = {
+  zoom: 0,
+  volume: 0.75,
+  duration: 1.3,
+  hours: 3,
+  minutes: 0,
+  handgap: 1,
+  roundsrows: 8,
+  stopatrounds: true,
+  nthrounds: 1,
+  waitforgaps: false,
+  solidme: false,
+  solidtreble: false,
+  cosallies: false,
+  highlightunder: false,
+  fadeabove: false,
+  displayplace: false,
+  placebells: false,
+  standbehind: false,
+  melouder: false,
+  instructions: false,
+  feedback: true
+};
+//time for one row
+var speed = 2.3;
+//time between one bell and the next
+var delay;
+//
+var playing = false;
+//these variables are for scheduling purposes and will get ahead of the actual position in the rows
+//zero-indexed
+var ringingplace = 0;
+var nextBellTime = 0.0;
+var ringingstroke = 1;
+var rownum = 0;
+var roundscount = 0;
+
+
+var timeout;
+var animrequest;
+var lookahead = 5.0;
+var schedule = 0.02;
+var waiting;
+
+//a call given in the first row, not the first call whenever it happens
+var firstcall;
+var currentcall;
+var callqueue = [];
+var lastcall = "";
+var lastcallrow = 0;
+var thatsall;
+//for the visualization of striking
+//objects have: place in whole pull, time, mybell (boolean), diff
+//
+var soundqueue = [];
+//just alternates between 1 and 2, determines which of the two sound lines is currently in use
+var soundrow = 1;
+var soundplace;
+var handstrokerow = 0;
+var endtime;
+
+var mybells = [];
+var mbells = [];
+var keysdown = [];
+var listeners = [
+  {id: "hand13b", event: "endEvent", f: endpull},
+  {id: "back12b", event: "endEvent", f: endpull},
+  {id: "sally", event: "mouseover", f: pointer},
+  {id: "sally", event: "click", f: emitring},
+  {id: "tail", event: "mouseover", f: pointer},
+  {id: "tail", event: "click", f: emitring},
+  {id: "hand", event: "touchstart", f: emitring},
+  {id: "back", event: "touchstart", f: emitring},
+  {id: "hand", event: "touchend", f: prevent},
+  {id: "back", event: "touchend", f: prevent}
+];
+//map of rowArray, objects contain rownum which is INDEX, not rowArray rowNum, place of mybell (0-indexed)
+var myrowtimes;
+//last time the user rang during play
+var mylasttime;
+var myrow = 0;
+
+//saving timing data
+var myringingdata = [];
+
+//temporary or uncertain
+var myqueue = [];
+var tempdiffs = [];
+var ringingdata = {scheduled: [], actual: []};
+var actualposition = {rep: 0, rownum: 0};
+//times when the first *pull* of the row is scheduled to start
+var rowstartqueue = [];
+
 
 
 $(function(){
-  
+  //console.log("test my ringing");
   window.location.hash = "";
   //disable gridgrid input elements
   changegridtype();
@@ -92,10 +204,20 @@ $(function(){
     svg.configure({xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink", width: 0, height: 0});
   }});
 
+  //prevent typing in inputs from triggering a bell ring
+  $("body").on("keydown", "input", function(e) {
+    e.stopPropagation();
+  });
+
   //nav toggle
   $("#nav-options").click(function() {
     $("#nav-options ul").slideToggle(600, "swing");
-    $(".arrow").toggleClass("rotate");
+    $("#nav-options .arrow").toggleClass("rotate");
+  });
+  //simulator toggle
+  $("#simulatormenu").on("click", () => {
+    $("#simulatormenu .arrow").toggleClass("rotate");
+    $("#options").slideToggle(600, "swing");
   });
   
   $("#stage").change(stagechange);
@@ -129,6 +251,22 @@ $(function(){
   
   $("#submit").on("click", submitform);
   $("#clearform").on("click", resetform);
+
+  //simulator
+  $("#start").on("click", playpauseclick);
+  $("#reset").on("click", resetsimulator);
+  $("body").on("keydown", keyring);
+  $("body").on("keyup", updatekeysdown);
+  $("#simulatorcontainer input").on("change", simoptionschange);
+  $("#myrope").on("change", myropechange);
+
+  //prevent duplication in keyboard commands
+  $("#options").on("keypress", "input.keyboard", function(e) {
+    if (mbells.find(o => o.keys.includes(e.key))) {
+      e.preventDefault();
+    }
+  });
+
   
 });
 
@@ -145,10 +283,57 @@ function getlists() {
         bigmethodarr = arr;
         console.log("lists retrieved");
         getqueryparams();
+        //set up sounds for simulator already
+        for (let i = 0; i < bells.length; i++) {
+          bells[i].url = "/sounds/" + bells[i].bell + ".wav";
+        }
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        gainNode = audioCtx.createGain();
+        gainNode.gain.value = 0.75;
+        $("body").on("click", () => {
+          if (audioCtx.state === 'suspended') {
+            console.log("resuming audio");
+            audioCtx.resume();
+          }
+        });
+        setupSample(0);
       });
       
     });
   });
+}
+
+//fetch a sound file
+async function getFile2(audioContext, filepath) {
+  try {
+    const response = await fetch(filepath);
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return arrayBuffer;
+  } catch (error) {
+    console.log(error.message);
+    //alert("Sorry, there has been a problem accessing the sound files.");
+    return null;
+  }
+}
+
+//create sound buffers for all the bells
+async function setupSample(i) {
+  let arrayBuffer = await getFile2(audioCtx, bells[i].url);
+  if (arrayBuffer) {
+    audioCtx.decodeAudioData(arrayBuffer, (buffer) => {
+      bells[i].buffer = buffer;
+      if (i < bells.length-1) {
+        i++;
+        setupSample(i);
+      } else {
+        soundsready = true;
+        console.log("finished getting sounds");
+      }
+    }, (e) => { console.log(e) });
+  }
 }
 
 function getqueryparams() {
@@ -183,10 +368,11 @@ function getqueryparams() {
 //third issue: too much info! conflicting info!
 //not enough info needs to be handled generally
 //filling the form should be separate from submitting it
+//[to do] this needs lots of updates as I restore things!!
 function checkqueryparams(obj, oldobj) {
   let problem;
-  //currently only grid or staff type
-  if (!obj.type || !["grid", "staff"].includes(obj.type)) {
+  //added simulator back
+  if (!obj.type || !["grid", "staff", "simulator"].includes(obj.type)) {
     //can't do this (yet)
     problem = "type";
     
@@ -299,9 +485,10 @@ function fillform(obj) {
 
   numtexts.forEach(t => {
     if (t === "tenors" && obj[t]) {
-      //currently only staff
+      //staff or simulator
       //obj.type (var type won't be set correctly yet)
-      $("#stenors").val(obj[t]).change();
+      let tenorids = {staff: "#stenors", simulator: "#mtenors"};
+      $(tenorids[obj.type]).val(obj[t]).change();
     }
   });
 
@@ -371,6 +558,9 @@ function stagechange() {
 
   $("div#searchby"+lookup).find(":input").prop("disabled", stage === null);
   typeinputs();
+  //disable simulator if stage is too high
+  let simtypeli = $("#type li:last-child");
+  stage > 12 ? simtypeli.addClass("disabled") : simtypeli.removeClass("disabled");
   
   //remove methods from name dropdown
   $('ul#methodList').children().detach();
@@ -471,9 +661,11 @@ function changestrategy() {
 }
 
 function typeliclick(e) {
-  let id = $(e.currentTarget).find("input").attr("id");
-  $("#"+id).prop("checked", true);
-  typechange();
+  if (!$(e.currentTarget).hasClass("disabled")) {
+    let id = $(e.currentTarget).find("input").attr("id");
+    $("#"+id).prop("checked", true);
+    typechange();
+  }
 }
 
 function typeinputs() {
@@ -508,7 +700,8 @@ function typechange() {
   $("div#"+type+"opts").removeClass("hidden");
   
   //remove higher stages for graph and simulator
-  //I don't appear to be dealing with people having selected one of those stages
+  //[to do] I don't appear to be dealing with people having selected one of those stages
+  //have dealt with simulator, but not sure about query params
   $("#stage option:nth-child(n+11)").prop("disabled", ["graph", "simulator"].includes(type));
 }
 
@@ -1113,7 +1306,7 @@ function getChar(char, dir) {
 
 //click submit
 function submitform() {
-  $(".results").remove();
+  $(".results,.chute").remove();
   window.location.hash = "";
   method = null;
   blueBell = null;
@@ -1156,9 +1349,11 @@ function submitform() {
   
 }
 
+//two steps: build row array, then display it
 function resultsrouter(obj) {
   //console.log(obj);
   $("#container").contents().remove();
+  $("#simulatorcontainer").hide();
   let queryarr = Object.keys(obj).map(k => encodeURIComponent(k)+"="+encodeURIComponent(obj[k]).replace(/%20/g, "+"));
   //get row array
   let title;
@@ -1184,6 +1379,12 @@ function resultsrouter(obj) {
       case "staff":
         drawstaff(title);
         break;
+      case "simulator":
+        soundchecked = 0;
+        simtitle = title;
+        if (!soundsready) $("#loadingdiv").show();
+        checksoundsready();
+        break;
     }
     
     window.location.hash = 'svgs';
@@ -1203,6 +1404,21 @@ function resultsrouter(obj) {
   }
 }
 
+function checksoundsready() {
+  if (soundsready) {
+    routersimulator(simtitle);
+  } else {
+    soundchecked++;
+    if (soundchecked < 10) {
+      setTimeout(checksoundsready, 1000);
+    } else {
+      $("#loadingdiv").hide();
+      alert("Sorry, there seems to be a problem loading the bell sounds! Try resubmitting the form.");
+    }
+  }
+}
+
+//step two: display
 function routergrid(obj, title) {
   //different grid display options
   $("#container").append("<h1>"+title+"</h1>");
@@ -1220,10 +1436,9 @@ function routergrid(obj, title) {
       drawgridgrid();
       break;
   }
-  
-  
 }
 
+//step one: build rows
 function routermethod(obj) {
   method = findmethod(obj);
   let title;
@@ -1238,12 +1453,13 @@ function routermethod(obj) {
   return title;
 }
 
+//step one: build rows
 function routerpn(obj) {
   let res = parsePN(obj.placeNotation, obj.stage);
   let title;
   //console.log(res);
   if (res[0]) {
-    //error
+    //[to do] error
   } else {
     let pn = res[1];
     let m = findbypn(pn, obj.stage);
@@ -1283,7 +1499,7 @@ function buildrowarr() {
       rowArray.unshift({rowNum: 0, bells: rounds(method.stage)});
       break;
     case "touch":
-      // stuff here later
+      //[to do] stuff here later
       break;
     default:
       buildplaincourse(method.stage, method.plainPN);
@@ -1306,6 +1522,1223 @@ function buildrowarr() {
   }
   numbells = rowArray[0].bells.length;
 }
+
+
+function routersimulator(title) {
+  console.log("setting up simulator");
+  $("#loadingdiv").hide();
+  $("#simulatorcontainer h1").text(title);
+  simopts.zoom = 0;
+  $("#zoom").val(0);
+  $("#myrope option").remove();
+  for (let i = 1; i <= numbells; i++) {
+    $("#myrope").append(`<option value="${i}">${i}</option>`);
+  }
+  //build row array in needed format
+  //actually just modify the row array I'm already building
+  rowArray.forEach(o => {
+    o.row = o.bells.map(n => [n]);
+  });
+  //need to add extra rounds row and go call
+  let zero = rowArray[0];
+  if (rowArray[0].rowNum === 0) {
+    let extra = {rowNum: -1, row: [], bells: zero.bells};
+    zero.bells.forEach(b => extra.row.push([b]));
+    let call = "Go "+(method.name && method.name.length ? method.name : "next time");
+    extra.call = call;
+    rowArray.unshift(extra);
+  }
+  for (let i = 0; i < simopts.roundsrows-2; i++) {
+    let o = {rowNum: -2-i, row: [], bells: zero.bells};
+    zero.bells.forEach(b => o.row.push([b]));
+    rowArray.unshift(o);
+  }
+  firstcall = rowArray[0].call || null;
+  //markers
+  $(".sound.marker").remove();
+  placemarkers();
+  //set of sounds/bell objects to use
+  buildcurrentbells("tower", numbells);
+  //set peal speed
+  setpealspeed();
+  calcspeed();
+  //set "mybell" if auto?
+  if (!queryobj.blueBell || queryobj.blueBell === "auto") {
+    let blue = chooseworking(1);
+    blueBell = blue[0] || 1;
+  } else {
+    blueBell = Number(queryobj.blueBell);
+  }
+  $("#myrope option:nth-child("+blueBell+")").attr("selected", true);
+  //add ropes
+  //position ropes
+  //connect sounds to ropes
+  buildtower(blueBell, numbells);
+  let perspective = "63% 40%";
+  switch (numbells) {
+    case 12:
+      perspective = "55% 40%";
+      break;
+    case 10:
+      perspective = "57% 40%";
+      break;
+  }
+  $("#bells").css("-webkit-perspective-origin", perspective);
+  //set up coursing order - need to do this before assigning the bell
+  if (method.leadHeadCode) { //[to do] modify this for touches: && method.hunts.length === 1 
+    let co = homecourseorder(method.stage);
+    co.unshift(method.stage);
+    if (method.hunts.length === 2) {
+      let i = co.indexOf(2);
+      co.splice(i, 1);
+    }
+    method.courseorder = co;
+  }
+  if (method.courseorder) {
+    $("#li-cosallies").show();
+  } else {
+    $("#cosallies").prop("checked", false);
+    simopts.cosallies = false;
+    $("#li-cosallies").hide();
+  }
+  
+  //assign bell
+  assign(blueBell);
+  
+  //which things need resetting?
+  resetsimulator();
+  $("#simulatorcontainer").show();
+}
+
+
+
+
+/* ***** SIMULATOR SETUP ***** */
+
+//default speed based on number of bells
+function setpealspeed() {
+  let minutes = 150 + numbells*5;
+  let h = Math.floor(minutes/60);
+  let m = minutes % 60;
+  $("#hours").val(h);
+  $("#minutes").val(m);
+}
+
+//take peal speed values and calculate row and blow duration
+//using this one
+function calcspeed() {
+  let h = Number($("#hours").val());
+  let m = Number($("#minutes").val());
+  savesimspeed(h,m);
+  let minutes = h*60 + m;
+  let wholepull = minutes / 2520;
+  delay = wholepull * 60 / (numbells*2+1);
+  speed = delay*numbells;
+  $("#sound-line1,#sound-line2").css("transition", "width "+(speed*2-delay)+"s linear");
+}
+
+//take speed and calculate delay and peal speed
+//not using this one
+function calcpealspeed() {
+  delay = speed/numbells;
+  let wholepull = speed*2+delay; //add handstroke gap
+  let minutes = Math.round(wholepull * 2520 / 60);
+  let h = Math.floor(minutes/60);
+  let m = minutes % 60;
+  $("#hours").val(h);
+  $("#minutes").val(m);
+  savesimspeed(h,m);
+  $("#sound-line1,#sound-line2").css("transition", "width "+(speed*2-delay)+"s linear");
+}
+
+function savesimspeed(h, m) {
+  simopts.hours = h;
+  simopts.minutes = m;
+}
+
+function buildcurrentbells(type, n) {
+  currentbells = [];
+  let filter = bells.filter(o => o.type === type);
+  for (let i = 0; i < n; i++) {
+    let model = filter[i];
+    let o = {
+      num: n-i,
+      buffer: model.buffer,
+      stroke: 1
+    };
+    currentbells.push(o);
+  }
+}
+
+//add markers
+function placemarkers() {
+  let left = -8;
+  for (let i = 0; i < numbells*2; i++) {
+    $("#sound-line1,#sound-line2").append(`<div class="sound marker" style="left: ${left}px;"></div>`);
+    if (i%numbells === 0) $(".sound.marker:last-child").addClass("first");
+    left += 660/(2*numbells-1);
+  }
+}
+
+//reset marker position when they're already there
+function positionmarkers() {
+  let left = -8;
+  for (let i = 1; i <= numbells; i++) {
+    $(".sound.marker:nth-child("+i+")").css("left", left+"px");
+    $(".sound.marker:nth-child("+(i+numbells)+")").css("left", (left+360)+"px");
+    left += 660/(2*numbells-1);
+  }
+}
+//reset one line of markers
+function positionlinemarkers(id) {
+  let left = -8;
+  let distance = 660/(2*numbells-1);
+  for (let i = 1; i <= numbells*2; i++) {
+    $(id+" .sound.marker:nth-child("+i+")").css("left", left+"px");
+    left += distance;
+  }
+  //console.log(left-distance);
+}
+
+//set up all the ropes
+//start is the center/user rope, n is numbells
+function buildtower(start, n) {
+  //start with closest rope and go clockwise
+  for (let i = 0; i < n; i++) {
+    let num = start + i;
+    if (num > n) num -= n;
+    let j = n - num;
+    
+    addrope(num);
+    position(i,num);
+    //attach sounds to animation
+    let handstroke = document.getElementById("hand9b"+num);
+    handstroke.addEventListener("beginEvent", ring);
+    let backstroke = document.getElementById("back11b"+num);
+    backstroke.addEventListener("beginEvent", ring);
+
+    /*
+    //timing tracking
+    let handstart = document.getElementById("hand1b"+num);
+    handstart.addEventListener("beginEvent", tracktime);
+    let backstart = document.getElementById("back0b"+num);
+    backstart.addEventListener("beginEvent", tracktime);
+    */
+  }
+}
+
+//copied from bellmaster, some differences
+//num is the bell number, i is the index, starting with rope in front and going clockwise
+function position(i, num) {
+  let radius = 270; //update this for non-div by 4 stages ??? what do I mean by this
+  let zrad = 270; //diff ????
+  let angle = 2*Math.PI/numbells*i;
+  //adjustment here for user ringing two bells
+  let left = radius - radius * Math.sin(angle);
+  let z = Math.cos(angle*-1) * zrad - zrad/2; //diff
+  let bell = currentbells.find(b => b.num === num);
+  bell.left = left;
+  bell.z = z;
+  let zindex = 20 - Math.min(i,Math.abs(numbells-i))*2;
+  bell.zindex = zindex;
+  $("#chute"+num).css({"left": left+"px", transform: "translateZ("+z+"px)", "z-index": zindex});
+}
+
+function addrope(num) {
+  let div = `<div class="chute" id="chute${num}">
+    <span class="bellnum">${num}</span>
+    <span class="placebell"></span>
+  </div>`;
+  //then append the div
+  $("#bells").append(div);
+  let rope = svg.svg($("#chute"+num), null, null, 60, 500, {id: "rope"+num, class: "rope", viewBox: "0 0 60 500", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink"});
+  let defs = svg.defs(rope);
+  let pattern = svg.pattern(defs, "sallypattern", 0, 0, 1, 0.13);
+  let patternpaths = [{stroke: "blue", d: "M -2 4 l 5 -5"}, {stroke: "red", d: "M -2 8 l 9 -9"}, {stroke: "skyblue", d: "M -2 12 l 12 -12"}, {stroke: "blue", d: "M 1 13 l 9 -9"}, {stroke: "red", d: "M 5 13 l 5 -5"}];
+  patternpaths.forEach(o => {
+    svg.path(pattern, o.d, {"stroke-width": 3.2, stroke: o.stroke});
+  });
+
+  svg.rect(rope, 30, -90, 3, 260, {fill: "#dddddd", "stroke-width": 1, stroke: "#aaaaaa"});
+  svg.rect(rope, 30, 255, 3, 60, {fill: "#dddddd", "stroke-width": 1, stroke: "#aaaaaa"});
+
+  let hand = svg.svg(rope, null, null, null, null, {class: "hand", id: "hand"+num});
+  svg.rect(hand, 0, 170, 29, 90, {fill: "transparent"});
+  svg.rect(hand, 35, 170, 29, 90, {fill: "transparent"});
+  svg.rect(hand, 27, 170, 9, 90, 7, null, {fill: "url(#sallypattern)", class: "sally", id: "sally"+num});
+
+  let back = svg.svg(rope, null, null, null, null, {class: "back", id: "back"+num});
+  svg.rect(back, 0, 315, 29, 61, {fill: "transparent"});
+  svg.rect(back, 33, 315, 29, 61, {fill: "transparent"});
+  let tail = svg.svg(back, null, null, null, null, {class: "tail", id: "tail"+num});
+  svg.rect(tail, 30, 315, 5, 61, {fill: "white"});
+  svg.path(tail, "M31.5,310 v30 l2,2 v30 l-1,2 h-2 l-1,-2 v-28 l4,-5 v-20 l-6,-3", {"stroke-width": 3, stroke: "#dddddd", fill: "none"});
+  svg.path(tail, "M30,290 v50 l2,2 v30 l-1,2 l-1,-2 v-28 l5,-5 v-20 l-6,-3", {stroke: "#aaaaaa", "stroke-width": 1, fill: "none"});
+  svg.path(tail, "M33,290 v50 l2,2 v30 l-2,3 h-4 l-2,-2 v-28 l6,-7 v-17 l-6,-3 l1.2,-2", {stroke: "#aaaaaa", "stroke-width": 1, fill: "none"});
+  svg.rect(tail, 30.5, 315, 2, 9, {fill: "#dddddd"});
+  svg.path(tail, "M31,342 l3,-3", {stroke: "#dddddd", fill: "none", "stroke-width": 1});
+
+  let yy = [0, -6.2, -17, -37.22, -55.2, -37.11, -9.74, 23, 56.35, 89.125, 116.15, 135.04, 149.42, 159.65, 170.1, 173.7];
+  ["hand", "back"].forEach(s => {
+    for (let i = 0; i < yy.length-1; i++) {
+      let j = s === "hand" ? i+1 : i;
+      let y = s === "hand" ? yy[j] : yy[yy.length-i-2] ;
+      let dur = setdur(s,i);
+      let begin = i === 0 ? "indefinite" : s + (j-1) +"b"+num + ".endEvent";
+      svg.other(rope, "animate", {id: s+j+"b"+num, attributeName: "viewBox", to: "0 "+y+" 60 500", dur: dur, begin: begin, fill: "freeze"});
+    }
+  });
+}
+
+//calculate duration for a portion of the bellrope animation
+function setdur(s,i) {
+  let n = simopts.duration/21;
+  let dur = [0,14].includes(i) ? 3*n : [1,13].includes(i) ? 2*n : n;
+  return dur;
+}
+
+
+
+/* ***** RUN THE SIMULATOR ***** */
+
+function resetsimulator() {
+  if (!$("#reset").hasClass("disabled")) {
+    $("#reset").addClass("disabled");
+    $("#start").removeClass("disabled");
+    $("#display,#callcontainer,.instruct").text("");
+    $(".temporarydisable").prop("disabled", false).removeClass("temporarydisable");
+    
+    //set bells at hand
+    let backbells = currentbells.filter(b => b.stroke === -1).reverse();
+    for (let i = 0; i < backbells.length; i++) {
+      pull({bell: backbells[i].num, stroke: -1},audioCtx.currentTime+i*delay);
+    }
+    //reset things
+    rownum = 0;
+    ringingplace = 0;
+    roundscount = 0;
+    lastcall = "";
+    ringingstroke = 1;
+    thatsall = false;
+    currentcall = null;
+    soundrow = 1;
+    soundplace = 0;
+    handstrokerow = 0;
+    endtime = null;
+    callqueue = [];
+    soundqueue = [];
+    resetsoundline(1);
+    resetsoundline(2);
+    myringingdata = [];
+    rowArray.forEach(row => {
+      row.row.forEach(a => {
+        if (a.length === 2) a.pop(); 
+      });
+    });
+    updatedisplay(-1); //should cause myrow to be set at 0
+    
+    //[to do] course order sally stuff
+
+    //temporary or uncertain
+    tempdiffs = [];
+    ringingdata = {scheduled: [], actual: []};
+    actualposition = {rep: 0, rownum: 0};
+    rowstartqueue = [];
+    myqueue = [];
+  }
+}
+
+function playpauseclick() {
+  if (!playing && rownum === 0) {
+    treblesgoing();
+  } else {
+    thatisall();
+  }
+}
+
+//start
+//i've decided you can only start from the beginning
+function treblesgoing() {
+  playing = true;
+  $("#start").text("Stop");
+  $("#reset").addClass("disabled");
+  //need to distinguish already-disabled inputs
+  //disable everything
+  $("input:enabled,select:enabled").addClass("temporarydisable").prop("disabled", true);
+  //$("#options input").prop("disabled", true);
+
+  //set values
+  myrowtimes = rowArray.map((r,i) => {
+    let o = {
+      rownum: i,
+      place: r.row.findIndex(a => a[0] === mybells[0])
+    };
+    return o;
+  });
+  nextBellTime = audioCtx.currentTime;
+  mylasttime = nextBellTime;
+  if (rownum === 0 && (!mybells.includes(1) || simopts.standbehind)) {
+    ringingplace = -2;
+    myrowtimes[0].scheduled = nextBellTime + (myrowtimes[0].place+2)*delay;
+  }
+  
+  //actually go
+  animrequest = requestAnimationFrame(animater);
+  if (rownum === 0 && mybells.includes(1) && !simopts.standbehind) {
+    console.log("waiting in treblesgoing");
+    waiting = true;
+  } else {
+    console.log("starting");
+    waiting = false;
+    scheduler();
+  }
+  
+}
+
+//calculate the time between pulling the last bell of one stroke (input "stroke") and pulling the first bell of the next (different from time between sounds)
+function calcnextdelay(stroke) {
+  let currentfraction = stroke === 1 ? 11 : 14;
+  let currentdiff = currentfraction/21 * simopts.duration;
+  let nextsound = currentdiff + delay;
+  let nextfraction = stroke === 1 ? 14 : 11;
+  let nextstart = nextsound - nextfraction/21*simopts.duration;
+  if (stroke === -1) nextstart += delay*simopts.handgap; //handstroke gap
+  return nextstart;
+}
+
+//advance a place in the scheduling
+function nextPlace() {
+  ringingplace++;
+  if (ringingplace < numbells) nextBellTime += delay;
+  
+  if (ringingplace === 1) {
+    //schedule call
+    if (currentcall) {
+      callqueue.push({call: currentcall, time: nextBellTime, rownum: rownum});
+    }
+    //[to do] stuff to do if showing placebells and/or sally coursing order
+  }
+  //end of row
+  if (ringingplace === numbells) {
+    //console.log("end of row "+rownum);
+    nextBellTime += calcnextdelay(ringingstroke);
+    if (ringingstroke === -1) {
+      //schedule soundline reset - sort of
+      let o = {place: numbells*2+1, time: nextBellTime-delay, scheduled: true};
+      if (rownum === rowArray.length-1 && thatsall) {
+        o.thatsall = true;
+        endtime = o.time + 3*delay + simopts.duration/2;
+        //allow extra time in case the user is tenor and is late on the last blow
+        //delay doesn't matter if it's ahead in the queue!
+      } else {
+        soundqueue.push(o);
+      }
+    } 
+    ringingplace = 0;
+    ringingstroke *= -1;
+    rownum++;
+    currentcall = rowArray[rownum] && rowArray[rownum].call ? rowArray[rownum].call : " ";
+
+    //if this is the last time through an odd number of rows and we're on a handstroke...
+    if (rownum === simopts.roundsrows && simopts.stopatrounds && roundscount === simopts.nthrounds-1 && rowArray.length%2 === 1 && ringingstroke === 1) {
+      let penult = rowArray[rowArray.length-1];
+      let last = {rowNum: penult.rowNum+1, row: penult.bells.map(b => [b]), bells: penult.bells};
+      myrowtimes.push({rownum: rowArray.length, place: last.bells.indexOf(mybells[0])});
+      rowArray.push(last);
+    }
+
+    if (rownum === rowArray.length-2) {
+      //nearing end
+      roundscount++;
+      if ((roundscount === simopts.nthrounds && simopts.stopatrounds)) { //[to do] || comp
+        thatsall = true;
+        if (currentcall === " ") currentcall = "That's all!";
+      }
+      let start = myringingdata.length ? simopts.roundsrows : 0;
+      let end = thatsall ? rowArray.length : -3;
+      myringingdata.push(...myrowtimes.slice(start,end));
+      if (!thatsall) {
+        rowArray[simopts.roundsrows].row.forEach(a => {
+          if (a.length === 2) a.pop();
+        });
+        [simopts.roundsrows, simopts.roundsrows+1].forEach(rn => {
+          let sub = {rownum: rn, place: myrowtimes[rn].place};
+          myrowtimes.splice(rn, 1, sub);
+        });
+      }
+    }
+
+    if (rownum === rowArray.length && !thatsall) {
+      //repeat the rowArray
+      //resetting of bells rung required???
+      //resetting the first row above, a bit early, others in the animater function
+      rownum = simopts.roundsrows;
+      currentcall = rowArray[rownum] && rowArray[rownum].call ? rowArray[rownum].call : " ";
+    }
+
+    
+  }
+}
+
+//p is ringingplace, t is nextBellTime
+function scheduleRing(p, t) {
+  if (p > -1) {
+    //ringingdata.scheduled.push(t);
+    let arr = rowArray[rownum].row[p];
+    let bell = arr && arr.length;
+    let mine = bell ? mybells.includes(arr[0]) : null;
+    
+
+    if (bell) {
+      if (!mine || simopts.standbehind) pull({bell: arr[0], stroke: ringingstroke}, t);
+      //put an object into soundqueue even if it's mybell
+      //first place of handstrokes needed to start the line
+      let o = {
+        place: p+1,
+        time: t,
+        mybell: mine,
+        scheduled: true,
+        //special: mine //temporary testing
+      };
+      if (mine && !simopts.standbehind && rownum === 0 && p === 0) {
+        //if I have the treble and this is the very first blow
+        o.special = true;
+        //o.scheduled = false;
+        //o.diff = 0;
+      }
+      
+      if (ringingstroke === -1) {
+        o.place += numbells;
+        o.time += 13*simopts.duration/21;
+      } else {
+        o.time += 9*simopts.duration/21;
+      }
+      soundqueue.push(o);
+      //
+      if (mine) {
+        //diff between row to row schedule and place to place schedule
+        //let diff = myrowtimes[rownum].scheduled ? myrowtimes[rownum].scheduled - t : null;
+        //tempdiffs.push(diff);
+        //calculate time for my next strike
+        let nextrow = rownum+1;
+        if (nextrow === rowArray.length) {
+          //by the time I'm scheduling the last row, roundscount has been increased already
+          nextrow = (!simopts.stopatrounds || roundscount < simopts.nthrounds) ? simopts.roundsrows : -1;
+        }
+        if (nextrow > -1) {
+          let d = myrowtimes[nextrow].place - p;
+          //speed is numbells * delay, but calcnextdelay provides one delay
+          let nexttime = t + speed - delay + delay*d + calcnextdelay(ringingstroke);
+          myrowtimes[nextrow].scheduled = nexttime;
+        }
+      }
+      
+    }
+    //clear "treble's going"
+    if (rownum === 0 && p === 0) {
+      console.log("first bell");
+      callqueue.push({call: "", time: t, rownum: rownum});
+    }
+    //schedule first call
+    if (rownum === simopts.roundsrows-2 && p === 1 && firstcall) {
+      callqueue.push({call: firstcall, time: t, rownum: rownum});
+    }
+    //wait or move to next place
+    if ((mine && !simopts.standbehind) && simopts.waitforgaps && (!arr || !arr[1])) {
+      waiting = t;
+      console.log("waiting in schedulering");
+    } else {
+      nextPlace();
+    }
+  } else {
+    let call = p === -2 ? "Look to" : "Treble's going";
+    callqueue.push({call: call, time: t, rownum: rownum});
+    nextPlace();
+  }
+}
+
+function scheduler() {
+  while (nextBellTime < audioCtx.currentTime + schedule && rowArray[rownum] && !waiting) {
+    scheduleRing(ringingplace, nextBellTime);
+  }
+  !waiting && rowArray[rownum] ? timeout = setTimeout(scheduler, lookahead): clearTimeout(timeout);
+}
+
+function animater() {
+  let call = lastcall;
+  let callrow = lastcallrow;
+  let currentTime = audioCtx.currentTime;
+
+  while (callqueue.length && callqueue[0].time < currentTime) {
+    call = callqueue[0].call;
+    callrow = callqueue[0].rownum;
+    callqueue.shift();
+  }
+  if (call != lastcall || callrow != lastcallrow) {
+    $("#callcontainer").text(call);
+    lastcall = call;
+    lastcallrow = callrow;
+  }
+  //end it if the user seems to be gone?
+  if (!simopts.standbehind && currentTime-mylasttime > 20) {
+    thatisall();
+  }
+  
+
+  //update display if I'm standing behind
+  let nexttime = myrowtimes[myrow] ? myrowtimes[myrow].scheduled : null;
+  if (simopts.standbehind && nexttime < currentTime) {
+    updatedisplay(myrow);
+  }
+  //keep advancing myrow even if I don't ring
+  if (nexttime && nexttime + speed/2 < currentTime) {
+    updatedisplay(myrow);
+  }
+
+  let ending = endtime && endtime < currentTime;
+  if (ending) {
+    thatisall();
+  }
+  
+  //feedback stuff
+  let soundmark = soundplace;
+  let o;
+  let marker;
+  if (soundqueue[0] && soundqueue[0].time < currentTime) {
+    o = soundqueue.shift();
+  }
+
+  if (o) {
+    if (o.scheduled) {
+      soundmark = o.place;
+      //ending = o.thatsall;
+      if (soundmark < numbells*2+1 && (!o.mybell || simopts.standbehind || o.special)) {
+        marker = {row: soundrow, mark: soundmark, mine: o.mybell};
+      }
+    } else {
+      ///*
+      let increment = 660/(2*numbells-1);
+      marker = {row: soundrow, mark: o.place, mine: true};
+      let d = o.rownum - handstrokerow;
+      if (![0,1].includes(d)) {
+        marker.row = soundrow === 1 ? 2 : 1;
+      }
+      marker.left = -8 + increment*(o.place-1) + increment*o.diff/delay;
+      //*/
+    }
+  }
+
+  if (marker && simopts.feedback) {
+    let dot = $("#sound-line"+marker.row+" .sound.marker:nth-child("+marker.mark+")");
+    if (marker.mine) dot.addClass("mymarker");
+    if (marker.left) dot.css("left", marker.left+"px");
+    dot.show();
+  }
+
+  if (soundmark != soundplace) {
+    //o is scheduled and new
+    let soundline = "#sound-line"+soundrow;
+    if (soundmark > (numbells*2)) {
+      handstrokerow += 2;
+      if (handstrokerow >= rowArray.length) {
+        let d = handstrokerow - rowArray.length;
+        handstrokerow = simopts.roundsrows + d;
+      }
+      let other = soundrow === 1 ? 2 : 1;
+      soundrow = other;
+      resetsoundline(soundrow);
+      
+    }
+
+    //start line
+    if (soundmark === 1 && simopts.feedback) {
+      $(soundline).css("width", "660px");
+    }
+  }
+
+  if (playing) {
+    animrequest = requestAnimationFrame(animater);
+  }
+}
+
+function thatisall() {
+  console.log("ending play");
+  playing = false;
+  waiting = false;
+  clearTimeout(timeout);
+  cancelAnimationFrame(animrequest);
+  $("#start").text("Start").addClass("disabled");
+  $("#reset").removeClass("disabled");
+  //enable inputs again...but only the form inputs...
+  $("#formform .temporarydisable").prop("disabled", false).removeClass("temporarydisable");
+}
+
+
+
+/* ***** SIMULATOR USE ***** */
+
+//ring with keyboard
+function keyring(e) {
+  let bell = mbells.find(o => o.keys.includes(e.key));
+  if (bell && !bell.ringing && !keysdown.includes(e.key) && (!playing || !simopts.standbehind)) {
+    keysdown.push(e.key);
+    let stroke = currentbells.find(b => b.num === bell.num).stroke;
+    let o = {bell: bell.num, stroke: stroke};
+    pull(o);
+  }
+}
+
+function updatekeysdown(e) {
+  let i = keysdown.indexOf(e.key);
+  if (i > -1) {
+    keysdown.splice(i, 1);
+  }
+}
+
+//emit ring from a click
+function emitring(e) {
+  let num = this.id.startsWith("sally") ? Number(this.id.slice(5)) : Number(this.id.slice(4));
+  let bell = currentbells.find(b => b.num === num);
+  let o = {bell: bell.num};
+  if ((this.id.startsWith("sally") || this.id.startsWith("hand")) && bell.stroke === 1) {
+    o.stroke = 1;
+
+  } else if ((this.id.startsWith("tail") || this.id.startsWith("back")) && bell.stroke === -1) {
+    o.stroke = -1;
+  }
+  //if you've given the robot your bell, don't interfere!
+  if (!playing || !simopts.standbehind) {
+    pull(o);
+  }
+}
+
+//adjust cursor on bell rope
+function pointer(e) {
+  let num = this.id.startsWith("sally") ? Number(this.id.slice(5)) : Number(this.id.slice(4));
+  let bell = currentbells.find(b => b.num === num);
+  if ((this.id.startsWith("sally") && bell.stroke === 1) || (this.id.startsWith("tail") && bell.stroke === -1)) {
+    this.style.cursor = "pointer";
+  } else {
+    this.style.cursor = "auto";
+  }
+}
+
+function prevent(e) {
+  e.preventDefault();
+}
+
+function endpull(e) {
+  let bellnum = Number(this.id.slice(7));
+  let bell = mbells.find(o => o.num === bellnum);
+  if (bell) {
+    bell.ringing = false;
+  }
+}
+
+//if the method has an odd number of rows and the course is rung more than once, rownum%2 won't indicate stroke :(
+function checkcurrentstroke() {
+  let prelim = actualposition.rownum%2 === 0 ? 1 : -1;
+  if (rowArray.length%2 === 0) {
+    return prelim;
+  } else {
+    if (actualposition.rep%2 === 1) prelim *= -1;
+    return prelim;
+  }
+}
+
+//check if the row number and stroke correspond
+function checkrowstroke(rn, stroke, rev) {
+  let remain = rn%2;
+  if ((remain === 0 && stroke === 1) || (remain === 1 && stroke === -1)) {
+    return rev ? false : true;
+  } else {
+    return rev;
+  }
+}
+
+
+//ring a bell
+//obj has: bell (number), stroke (1 or -1)
+//if user has triggered the pull, no t
+function pull(obj, t) {
+  if (currentbells.length) {
+    let now = audioCtx.currentTime;
+    let id = (obj.stroke === 1 ? "hand1b" : "back0b") + obj.bell;
+    let bell = currentbells.find(b => b.num === obj.bell);
+
+    if (bell && bell.stroke === obj.stroke) { //if strokes are consistent
+      let mbell = mbells.find(b => b.num === obj.bell);
+      if (mbell) mbell.ringing = true;
+      
+      //actually pull the rope
+      t ? document.getElementById(id).beginElementAt(t-now) : document.getElementById(id).beginElement();
+      
+      bell.stroke = obj.stroke * -1;
+      
+      //stuff to do if it's my bell
+      if (playing && !t && myrowtimes[myrow]) { //in case myrow gets weird...
+        mylasttime = now;
+
+        //if I'm starting this whole thing, this blow won't be scheduled, otherwise it should be???
+        let diff = waiting === true ? 0 : now-myrowtimes[myrow].scheduled;
+        //tempdiffs.push(diff);
+        let wrongrow = Math.abs(diff) > speed/2;
+        if (wrongrow) console.log("myrow incorrect?? or very early??");
+        //assuming this is the right row, check if I'm on the right stroke
+        let polarity = checkrowstroke(rownum, ringingstroke, false);
+        let mystroke = checkrowstroke(myrow, obj.stroke, !polarity);
+        if (!mystroke) console.log("wrong stroke??");
+        //[to do] maybe display something for some cases of being on the wrong stroke?
+        let repeat = myrowtimes[myrow].actual;
+        if (repeat) console.log("already rung this row??");
+
+        if (!wrongrow && !repeat) {
+          let p = myrowtimes[myrow].place;
+          rowArray[myrow].row[p][1] = true;
+          myrowtimes[myrow].actual = now;
+          //add to soundqueue
+          if (myrowtimes[myrow].scheduled) {
+            let o = {
+              rownum: myrow,
+              place: p+1,
+              time: now,
+              mybell: true,
+              diff: diff
+            };
+            if (obj.stroke === -1) {
+              o.place += numbells;
+              o.time += 13*simopts.duration/21;
+            } else {
+              o.time += 9*simopts.duration/21;
+            }
+            soundqueue.push(o);
+          }
+          updatedisplay(myrow);
+        }
+        
+        
+      }
+    }
+
+    if (waiting) {
+      //either user has the treble and needs to start everything, or "wait for human" is on and they are late
+      nextBellTime = Math.max(audioCtx.currentTime, nextBellTime); //waiting === true ? now+delay : 
+      //if (waiting === true) actualposition.rowstart = now;
+      waiting = false;
+      scheduler();
+    }
+  }
+}
+
+//given a row number (where the user has just rung), update visual information
+function updatedisplay(rn) {
+  let bell = mybells[0];
+  let next = rn+1;
+  if (next === rowArray.length && (!simopts.stopatrounds || roundscount < simopts.nthrounds)) {
+    //this would probably be a good place to reset things???
+    next = simopts.roundsrows;
+    myringingdata.push(...myrowtimes.slice(-3));
+    for (let i = next+1; i < rowArray.length; i++) {
+      let row = rowArray[i];
+      row.row.forEach(a => {
+        if (a.length === 2) a.pop(); 
+      });
+      if (i > next+1) {
+        let sub = {rownum: i, place: myrowtimes[i].place};
+        myrowtimes.splice(i, 1, sub);
+      }
+    }
+  }
+  myrow = next;
+  if (rowArray[next]) {
+    let nextrow = rowArray[next].row;
+    let p = nextrow.findIndex(a => a[0] === bell);
+
+    if (simopts.highlightunder) {
+      let n = p > 0 ? nextrow[p-1][0] : p === 0 ? bell : null;
+      if (n) highlight(n);
+    } else if (simopts.fadeabove) {
+      let fade = p > -1 ? nextrow.slice(p+1).map(a => a[0]) : [];
+      fadeout(fade); //even if array is empty, that might be a change! 
+    }
+
+    if (simopts.displayplace) {
+      let b = p+1;
+      $("#instruct"+bell).text(b === 0 ? "???" : placeName(b));
+    }
+    //[to do] instructions
+  }
+
+}
+
+function findmyplace(rn) {
+  return rowArray[rn].row.findIndex(a => a[0] === mybells[0]);
+}
+function getmyplacearr(rn, p) {
+  return rowArray[rn].row[p];
+}
+
+function findmyplacearr(rn) {
+  return rowArray[rn].row.find(a => a[0] === mybells[0]);
+}
+
+//not using
+function tracktime() {
+  let t = audioCtx.currentTime;
+  //if (playing) ringingdata.actual.push(t);
+}
+
+//given animation event find the buffer to play
+function ring(e) {
+  let stroke = this.id.startsWith("hand") ? 1 : -1;
+  let bellnum = Number(this.id.startsWith("hand") ? this.id.slice(6) : this.id.slice(7));
+  let bell = currentbells.find(b => b.num === bellnum);
+  if (bell) {
+    let pan = [];
+    let x = (bell.left - 270)/135;
+    let z = (bell.z)/100;
+    pan.push(x, 10, z);
+    if (simopts.melouder) {
+      let multiplier = mybells.includes(bellnum) ? 1.2 : 0.75;
+      gainNode.gain.value = simopts.volume * multiplier;
+    }
+    let buffer = bell.buffer;
+    playSample(audioCtx, buffer, pan);
+  }
+}
+
+//play sound
+function playSample(audioContext, audioBuffer, pan) {
+  //console.log("playSample called");
+  //console.log(audioBuffer);
+  const sampleSource = audioContext.createBufferSource();
+  sampleSource.buffer = audioBuffer;
+  const panner = audioContext.createPanner();
+  panner.panningModel = 'equalpower';
+  if (pan) {
+    panner.setPosition(...pan);
+    sampleSource.connect(panner).connect(gainNode).connect(audioContext.destination);
+  } else {
+    sampleSource.connect(gainNode).connect(audioContext.destination);
+  }
+  //sampleSource.connect(audioContext.destination);
+  sampleSource.start();
+  return sampleSource;
+}
+
+//reset so it can start again
+function resetsoundline(n) {
+  let id = "#sound-line"+n;
+  $(id+" .sound.marker").hide();
+  $(id+" .sound.marker").removeClass("mymarker");
+  positionlinemarkers(id);
+  let line = $(id).detach();
+  line.css("width", "0");
+  $("#visuals li:nth-child("+n+")").append(line);
+}
+
+//fade all but bell n
+function highlight(n) {
+  //console.log("highlighting "+n);
+  $(".highlight").removeClass("highlight").addClass("fade");
+  $("#chute"+n).removeClass("fade").addClass("highlight");
+}
+
+//fade bells in arr
+function fadeout(arr) {
+  $(".chute").removeClass("fade highlight");
+  for (let i = 1; i <= numbells; i++) {
+    $("#chute"+i).addClass(arr.includes(i) ? "fade" : "highlight");
+  }
+}
+
+
+
+
+/* ***** SIMULATOR ADJUSTMENTS ***** */
+
+
+function myropechange(e) {
+  let n = Number($("#myrope option:selected").val());
+  console.log(n);
+  assign(n);
+}
+
+//assign bell to user
+function assign(n) {
+  //remove existing listeners
+  listeners.forEach(l => {
+    mybells.forEach(b => {
+      document.getElementById(l.id+b).removeEventListener(l.event, l.f);
+    });
+    if (n && !simopts.standbehind) {
+      document.getElementById(l.id+n).addEventListener(l.event, l.f);
+    }
+  });
+  //$("#chute"+mybells[0]).css("z-index", 1);
+  $("div.instruct").remove();
+  if (n) {
+    mybells = [n];
+    //update keyboard controls
+    let str = "1234567890-=";
+    let keys = str[n-1];
+    keys += "j";
+    mbells = [{num: n, keys: keys}];
+    $("#mykeys").val(keys);
+    //$("#chute"+mybells[0]).css("z-index", 20);
+
+    //rotate ropes
+    let diff1 = blueBell - n;
+    let diff2 = n - blueBell;
+    if (diff1 < 0) diff1 += numbells;
+    if (diff2 < 0) diff2 += numbells;
+    let dir = diff1 <= diff2 ? 1 : -1;
+    let diff = dir === 1 ? diff1 : diff2;
+    if (diff > 0) {
+      $("#myrope").prop("disabled", true);
+      rotate(dir);
+      diff--;
+      let timer = setInterval(function() {
+        if (diff > 0) {
+          rotate(dir);
+          diff--;
+        } else {
+          $("#myrope").prop("disabled", false);
+          centerrope = [n];
+          clearTimeout(timer);
+        }
+      }, 700);
+    }
+    blueBell = n;
+    
+    //[to do] instructions
+    if (simopts.displayplace) {
+      $("#chute"+n).append(`<div id="instruct${n}" class="instruct"></div>`);
+    }
+    //handles fading + displaying place
+    updatedisplay(-1);
+    //co sally stuff & solid sallies
+    sallycolor();
+  }
+}
+
+//rotate rope circle
+function rotate(dir) {
+  let pos = [];
+  for (let i = 1; i <= numbells; i++) {
+    let bell = currentbells.find(b => b.num === i);
+    let o = {
+      left: bell.left,
+      z: bell.z,
+      zindex: bell.zindex
+    }
+    pos.push(o);
+  }
+
+  dir === 1 ? pos.push(pos.shift()) : pos.unshift(pos.pop());
+  for (let i = 1; i <= numbells; i++) {
+    let o = pos[i-1];
+    let bell = currentbells.find(b => b.num === i);
+    $("#chute"+i).css({"left": o.left+"px", transform: "translateZ("+o.z+"px)", "z-index": o.zindex});
+    for (let key in o) {
+      bell[key] = o[key];
+    }
+  }
+}
+
+
+function simoptionschange(e) {
+  let inputtype = $(this).attr("type");
+  if (inputtype === "checkbox") {
+    simopts[this.id] = $(this).is(":checked");
+  } else if (!["mykeys","zoom"].includes(this.id)) {
+    simopts[this.id] = Number($(this).val());
+  }
+  /*
+    options simply set and used:
+    "handgap"
+    "stopatrounds", "nthrounds"
+    "waitforgaps"
+    "standbehind"
+    "melouder"
+    "feedback"
+  */
+  if (simopts.standbehind) {
+    //no waiting
+    $("#waitforgaps").prop("checked", false);
+    simopts.waitforgaps = false;
+    $("#feedback").prop("disabled", false);
+  }
+  
+  switch (this.id) {
+    case "waitforgaps":
+      if (simopts.waitforgaps) {
+        $("#feedback").prop({checked: false, disabled: true});
+        simopts.feedback = false;
+      } else {
+        $("#feedback").prop("disabled", false);
+      }
+    case "volume":
+      //make a change
+      gainNode.gain.value = simopts.volume;
+      break;
+    case "duration":
+      //update animations
+      //[to do] should this trigger a speed change?
+      adjustanimduration();
+      break;
+    case "hours": case "minutes":
+      //update speed
+      calcspeed();
+      break;
+    case "roundsrows":
+      //adjust row array
+      adjustroundsrows();
+      break;
+    case "cosallies": case "solidme": case "solidtreble":
+      //apply sally colors
+      sallycolor();
+      break;
+    case "highlightunder": case "fadeabove":
+      //fade ropes, disable the other
+      $(".chute").removeClass("fade highlight");
+      if (simopts[this.id]) {
+        $(".following input").prop("disabled", true);
+        $(this).prop("disabled", false);
+        let rn = rowArray[rownum] ? rownum : 0;
+        let p = rowArray[rn].row.findIndex(a => a[0] === mybells[0]);
+        if (this.id === "highlightunder") {
+          $(".chute").addClass("fade");
+          let b = p === 0 ? mybells[0] : rowArray[rn].row[p-1][0];
+          highlight(b);
+        } else {
+          let arr = rowArray[rn].row.slice(p+1).map(a => a[0]);
+          fadeout(arr);
+        }
+      } else {
+        $(".following input").prop("disabled", false);
+      }
+      break;
+    case "displayplace": case "instructions":
+      //[to do] setup
+      if (simopts[this.id]) {
+        $(".displayplace input").prop("disabled", true);
+        $(this).prop("disabled", false);
+      } else {
+        $(".displayplace input").prop("disabled", false);
+      }
+      if (simopts.displayplace) {
+        mybells.forEach(b => {
+          let p = placeName(b);
+          $("#chute"+b).append(`<div id="instruct${b}" class="instruct">${p}</div>`);
+          //[to do] display initial place? or do that when treble's going? or wait til after rounds??
+        });
+      } else {
+        $("div.instruct").remove();
+      }
+      break;
+    case "mykeys":
+      
+      let b = mbells[0]; //should be exactly one item in mbells
+      b.keys = $(this).val();
+      break;
+    case "feedback":
+      
+      break;
+    case "left-right": case "up-down":
+      
+      let origin = $("#bells").css("-webkit-perspective-origin");
+      if (origin) {
+        let orig = origin.slice(0,-2).split("px ").map(n => Number(n));
+        switch (this.id) {
+          case "left-right":
+            orig[0] = 600 - Number(this.value);
+            break;
+          case "up-down":
+            orig[1] = this.value;
+            break;
+        }
+        $("#bells").css("-webkit-perspective-origin", orig.join("px ")+"px");
+      }
+      break;
+    case "depth":
+      $("#bells").css("-webkit-perspective", (1150 - this.value) + "px");
+      break;
+    case "zoom":
+      let to = Number(this.value);
+      let change = to - simopts.zoom;
+      let max = 0;
+      for (let i = 1; i <= numbells; i++) {
+        let current = $("#chute"+i).css("transform");
+        if (current) {
+          let arr = current.split(", ");
+          let num = arr.length > 6 ? Number(arr[arr.length-2]) : 0;
+          max = Math.max(max, change+num);
+          $("#chute"+i).css("transform", "translateZ("+(change + num)+"px)");
+        }
+      }
+      simopts.zoom = to;
+      break;
+  }
+}
+
+
+function sallycolor() {
+  if (simopts.cosallies) {
+    let courseorder = method.courseorder;
+    let n = courseorder.includes(mybells[0]) ? mybells[0] : courseorder[0];
+    $("#sally"+n).attr("fill", sallycolors[0]);
+    let i = courseorder.indexOf(n);
+    for (let j = 1; j <= Math.floor(courseorder.length/2); j++) {
+      let next = i+j;
+      if (next >= courseorder.length) next -= courseorder.length;
+      $("#sally"+courseorder[next]).attr("fill", sallycolors[j]);
+      if (courseorder.length%2 === 1 || j < Math.ceil(courseorder.length/2)) {
+        let before = i-j;
+        if (before < 0) before += courseorder.length;
+        $("#sally"+courseorder[before]).attr("fill", sallycolors[sallycolors.length-j]);
+      }
+    }
+  } else {
+    for (let b = 1; b <= numbells; b++) {
+      $("#sally"+b).attr("fill", simopts.solidme && mybells.includes(b) ? "darkred" : simopts.solidtreble && b===1 ? "red" : "url(#sallypattern)");
+    }
+  }
+}
+
+
+function adjustroundsrows() {
+  rowArray = rowArray.filter(o => o.rowNum > -2);
+  let zero = rowArray[0];
+  for (let i = 0; i < simopts.roundsrows-2; i++) {
+    let o = {rowNum: -2-i, row: [], bells: zero.bells};
+    zero.bells.forEach(b => {
+      o.row.push([b]);
+    });
+    rowArray.unshift(o);
+  }
+  firstcall = rowArray[0].call || null;
+}
+
+
+function adjustanimduration() {
+  for (let n = 1; n <= numbells; n++) {
+    for (let i = 0; i < 15; i++) {
+      ["hand", "back"].forEach(s => {
+        let j = s === "hand" ? i+1 : i;
+        let id = ["#",s,j,"b",n].join("");
+        let dur = setdur(s,i)+"s";
+        $(id).attr("dur", dur);
+      });
+    }
+  }
+}
+
+
+
+
+
+/* **** GRID(?) DISPLAY STUFF **** */
 
 //draw stuff
 function drawElement(label, args) {
@@ -1433,8 +2866,8 @@ function adjustwidth() {
   return add;
 }
 
+
 function drawgrid(pbs) {
-  
   let width = rowArray[0].bells.length*16 + 38;
   let x = 40;
   let add = adjustwidth();
@@ -1479,6 +2912,7 @@ function drawgrid(pbs) {
   }
 }
 
+//big display function
 let shadebackstrokes = false;
 function drawgridsvg(arr, paths, width, x) {
   let xinc = 16;
@@ -1603,7 +3037,10 @@ function drawdescript(group, x) {
   });
 }
 
-//drawing staff things
+
+
+
+/* ***** drawing staff things ***** */
 
 function drawstaff(title) {
   $("#container").append("<h1>"+title+"</h1>");
@@ -1914,7 +3351,11 @@ function drawnotes(rows, system, startx, blue) {
 }
 
 
-// BELLRINGING FUNCTIONS
+
+
+
+
+/* ***** BELLRINGING FUNCTIONS ***** */
 
 //given stage number, get its name
 function getStageName(stage) {
@@ -1992,6 +3433,17 @@ function buildpborder(pn, pnstage) {
     pbs = [];
   }
   return pborder;
+}
+
+//build plain bob course order
+//does not include tenor
+function homecourseorder(stage) {
+  let home = [];
+  for (let b = 2; b < stage; b+=2) {
+    home.push(b);
+    if (b < stage-1) home.unshift(b+1);
+  }
+  return home;
 }
 
 //categorize tokens in supposed place notation
@@ -2212,18 +3664,21 @@ function findbypn(pn, pnstage) {
 //n will be 1 if description is being shown, otherwise 2
 //allows one working bell from each cycle if there is more than one working cycle
 //attempts to choose palindromic bell
+//if they're all hunt bells, tries to choose palindromic?
 function chooseworking(n) {
   let used = [];
   method.hunts.forEach(b => used.push(b));
-  let bell;
+  let bell = [stage];
+  let pal = testlastpn(method.plainPN[method.plainPN.length-1]);
   if (used.length < stage) {
-    let pal = testlastpn(method.plainPN[method.plainPN.length-1]);
     
     if (pal && !used.includes(pal) && (n === 1 || method.pbOrder.length === 1)) {
       bell = [pal];
     } else {
       bell = n === 1 ? [method.pbOrder[0][0]] : method.pbOrder.map(a => a[0]) ;
     }
+  } else if (pal) {
+    bell = [pal];
   }
   return bell;
 }

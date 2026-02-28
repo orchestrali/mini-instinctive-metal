@@ -146,6 +146,10 @@
                 <label for="staff">Staff notation</label>
                 <input type="radio" id="staff" name="type" value="staff" class="hidden"/>
               </li>
+              <li>
+                <label for="simulator">Simulator</label>
+                <input type="radio" id="simulator" name="type" value="simulator" class="hidden"/>
+              </li>
             </ul>
           </fieldset>
           <div id="gridopts" class="type">
@@ -273,6 +277,14 @@
               </label>
             </div>
           </div>
+          <div id="simulatoropts" class="type hidden">
+            <h3>Options</h3>
+            <div>
+              <label for="mtenors">Tenor(s) behind: 
+                <input type="number" id="mtenors" name="tenors" value="0" />
+              </label>
+            </div>
+          </div>
         </div>
         <div id="buttoncontainer">
           <button type="button" id="submit">Submit</button>
@@ -280,8 +292,134 @@
         </div>
       </form>
       <div id="anchorcontainer"><a name="svgs"></a></div>
+      <div id="loadingdiv">
+        <img src="/images/wait.gif" alt="spinning circle" id="loading" />
+      </div>
       <div id="container">
         
+      </div>
+      <div id="simulatorcontainer" style="display:none;">
+        <!-- add a way to hide and show all these options?? -->
+        <h1></h1>
+        <div>
+          <label for="myrope">My rope:</label>
+          <select id="myrope">
+            <option value="1" selected>1</option>
+          </select>
+        </div>
+        <div id="simulatormenu">
+          <h4>Simulator settings</h4>
+          <div class="arrow"></div>
+        </div>
+        <div id="options" class="dropdown">
+          
+          <ul id="simulatoropts">
+            <li>
+              <!-- I had keyboard controls separated for possibility of multiple bells -->
+              <label for="mykeys">Keyboard controls</label>
+              <input type="text" id="mykeys" class="keyboard" />
+            </li>
+            <li class="rangeinput">
+              <div><label for="volume">Volume</label></div>
+              <div><input type="range" id="volume" min="0" max="2" value="1" step="0.01" class="block"/></div>
+            </li>
+            <li>
+              Pealspeed: 
+              <label for="hours"><input type="number" min="1" step="1" name="hours" id="hours" value="3"/>hours</label>
+              <label for="minutes"><input type="number" min="0" max="59" step="1" name="minutes" id="minutes" value="0"/>minutes</label>
+            </li>
+            <li>
+              <label for="roundsrows">Rows of rounds to start: </label>
+              <input type="number" min="2" step="2" name="roundsrows" id="roundsrows" value="8" />
+            </li>
+            <li>
+              <input type="checkbox" name="stopatrounds" id="stopatrounds" checked /><label for="nthrounds">Stop at the <input type="number" name="nthrounds" id="nthrounds" min="1" step="1" value="1" />th occurence of rounds</label>
+            </li>
+            <li>
+              <input type="checkbox" name="waitforgaps" id="waitforgaps" /><label for="waitforgaps">Wait for human ringer</label>
+            </li>
+            <li>
+              <input type="checkbox" name="standbehind" id="standbehind" /><label for="standbehind">Give robot my bell</label>
+            </li>
+            <li>
+              <input type="checkbox" name="melouder" id="melouder" /><label for="melouder">Play my bell louder</label>
+            </li>
+            <li>
+              <input type="checkbox" name="feedback" id="feedback" checked /><label for="feedback">Show visualisation of striking</label>
+            </li>
+            <li>
+              <label for="duration">Stroke duration in seconds: </label>
+              <input id="duration" type="number" value="1.3" step="0.1" min="1.0" />
+            </li>
+            <li>
+              <label for="handgap">Handstroke gap in bells: </label>
+              <input id="handgap" type="number" value="1" step="1" min="0" />
+            </li>
+          </ul>
+          
+          
+          <ul>
+            <li id="li-cosallies"><input type="checkbox" name="cosallies" id="cosallies" />Color sallies based on coursing order</li>
+            <li id="li-solidme"><input type="checkbox" name="solidme" id="solidme" />Give my rope a solid-color sally</li>
+            <li id="li-solidtreble"><input type="checkbox" name="solidtreble" id="solidtreble" />Give the treble a solid-color sally</li>
+            <li class="following"><input type="checkbox" name="highlightunder" id="highlightunder" />Highlight the rope I should follow (lead when my rope is highlighted)</li>
+            <li class="following"><input type="checkbox" name="fadeabove" id="fadeabove" />Fade the ropes above me</li>
+            <li class="displayplace"><input type="checkbox" name="displayplace" id="displayplace" />Display the place I should be in</li>
+            <!--<li class="displayplace"><input type="checkbox" name="instructions" id="instructions" />Display method instructions</li>-->
+            
+          </ul>
+          
+          
+          
+        </div>
+        <ul id="conduct">
+          <li id="start">Start</li>
+          <li id="reset" class="disabled">Reset</li>
+        </ul>
+        <div id="room">
+          <div id="visuals">
+            <ul>
+              <li>
+                <div id="sound-line1"></div>
+              </li>
+              <li>
+                <div id="sound-line2"></div>
+              </li>
+            </ul>
+          </div>
+          <div id="display">
+            
+          </div>
+          <div id="bells">
+            <div id="callcontainer">
+        
+            </div>
+        
+          </div>
+          <div id="display2">
+            <div id="roomzoom">
+              <ul>
+                <li class="rangeinput">
+                  <div><label for="left-right">Left-right</label></div>
+                  <div><input type="range" id="left-right" min="0" max="600" step="5" value="180"/></div>
+                </li>
+                <li class="rangeinput">
+                  <div><label for="up-down">Up-down</label></div>
+                  <div><input type="range" id="up-down" min="0" max="500" step="5" value="250"/></div>
+                </li>
+                <li class="rangeinput">
+                  <div><label for="zoom">Zoom</label></div>
+                  <div><input type="range" id="zoom" min="-50" max="100" step="5" value="0"/></div>
+                </li>
+                <li class="rangeinput">
+                  <div><label for="depth">Depth</label></div>
+                  <div><input type="range" id="depth" min="50" max="1100" step="5" /></div>
+                </li>
+              </ul>
+        
+            </div>
+          </div>
+        </div>
       </div>
     </main>
     
