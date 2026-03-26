@@ -13,6 +13,8 @@ const sharps = ['G', 'D', 'A', 'E', 'B', 'F♯'];
 const flats = ['F', 'B♭', 'E♭', 'A♭', 'D♭', 'G♭'];
 const sharpy = [19, 34, 14, 29, 44, 24];
 const dyPenta = [0, 5, 10, 20, 25, 35, 40, 45, 55, 60];
+//complib api url for getting methods & compositions
+const compliburl = "https://api.complib.org/";
 //type of display: grid, graph, staff, practice, simulator
 var type = "grid";
 //grid display options: basic-lines, everyline, bellgroups
@@ -33,7 +35,7 @@ var formstart = {
 //gridcolors: "colors" // not actually default because gridline is default!
 //form inputs
 const selects = ["stage", "methodClass", "blueBell", "keysig", "actTenor"];
-const texts = ["methodName", "placeNotation"];
+const texts = ["methodName", "placeNotation", "complibid"];
 const numtexts = ["tenors"];
 const radios = ["lookup", "type", "gridtype", "gridcolors", "timesig"];
 const checked = ["numbers", "describe", "pn", "gap", "includeTime", "onlyblue", "mobile"];
@@ -383,6 +385,7 @@ function checkqueryparams(obj, oldobj) {
     problem = "stage";
   } else if (obj.complibid) {
     //no complibid yet
+    //[to do]
     problem = "complib";
   } else if (obj.quantity === "touch") {
     //no quantity touch yet
@@ -1342,7 +1345,10 @@ function submitform() {
     $("#container").append(`<h4>Enter a method name to view it</h4>`);
   } else if (queryobj.lookup === "pn" && !queryobj.placeNotation) {
     $("#container").append(`<h4>Enter place notation for the method you want to view</h4>`);
+  } else if (queryobj.lookup === "complib" && !queryobj.complibid) {
+    $("#container").append(`<h4>Enter a complib link to view it</h4>`);
   } else {
+    
     resultsrouter(queryobj);
   }
   
@@ -1365,10 +1371,23 @@ function resultsrouter(obj) {
     case "pn":
       title = routerpn(obj);
       break;
+    case "complib":
+      let url = obj.complibid;
+      complibrouter(url, (t) => {
+        title = t;
+        if (title) console.log(title);
+      });
+      break;
   }
   //do stuff with it
+  if (obj.lookup != "complib") {
+    resultdisplayrouter(obj, title, queryarr);
+  }
   
   
+}
+
+function resultdisplayrouter(obj, title, queryarr) {
   if (title) {
     //console.log(method.hunts);
     //$("#anchorcontainer").append(`<a name="svgs"></a>`);
@@ -1399,7 +1418,12 @@ function resultsrouter(obj) {
       //console.log("setting history");
       history.pushState('', '', '/#svgs');
     }
-    let text = obj.lookup === "name" ? "Method not found" : "Problem with place notation";
+    let problems = {
+      name: "Method not found",
+      pn: "Problem with place notation",
+      complib: "Problem with complib link"
+    };
+    let text = problems[obj.lookup];
     $("#container").append(`<h4>${text}</h4>`);
   }
 }
@@ -1479,6 +1503,77 @@ function routerpn(obj) {
     buildrowarr();
   }
   return title;
+}
+
+//take input of complib url field and process it
+function complibrouter(url, cb) {
+  let problem;
+  let complibid, comptype, accesskey;
+  if (url.startsWith("https://complib.org/")) {
+    url = url.slice(20);
+    if (url.startsWith("method/")) {
+      comptype = "method";
+    } else if (url.startsWith("composition/")) {
+      comptype = "composition";
+    }
+    if (comptype) {
+      let i = comptype.length+1;
+      url = url.slice(i);
+      let q = url.indexOf("?");
+      let j = q > -1 ? q : url.length;
+      let id = url.slice(0, j);
+      if (/^\d+$/.test(id)) {
+        complibid = id;
+        if (q > -1 && url[q+1]) {
+          let query = url.slice(q+1).split("&");
+          accesskey = query.find(s => s.startsWith("accessKey="));
+        }
+        getcomplib(complibid, comptype, accesskey, cb);
+      } else {
+        problem = "id should be all numbers";
+      }
+    } else {
+      problem = "not method or composition";
+    }
+  } else {
+    problem = "incorrect url";
+  }
+
+  if (problem) {
+    //???
+    console.log("problem with complib url");
+    console.log(problem);
+  }
+}
+
+//get complib rows
+function getcomplib(id, type, access, cb) {
+  var xhr = new XMLHttpRequest();
+  let path = compliburl + type + "/" + id + "/rows";
+  if (access && access.length) path += "?" + access;
+
+  xhr.open('GET', path, true);
+  xhr.send();
+
+  xhr.onload = function() {
+    let results = JSON.parse(xhr.responseText);
+
+    if (results.rows) {
+      //[to do] do stuff with them!
+      console.log("rows retrieved");
+      console.log(results.rows.length);
+      cb(results.title);
+    } else {
+      //something is wrong
+      console.log("problem with complib");
+      cb();
+    }
+  }
+
+  xhr.onerror = function() {
+    console.log("error retrieving complib");
+    cb();
+  }
 }
 
 //get more method info
