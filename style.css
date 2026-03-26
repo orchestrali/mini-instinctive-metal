@@ -212,6 +212,10 @@
   input#placeNotation {
     flex: 1 335px;
   }
+
+  input#complibid {
+    width: 500px;
+  }
   
   div#methodSearch div {
     position: relative;
