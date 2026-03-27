@@ -3159,11 +3159,11 @@ function drawgridsvg(arr, paths, width, x) {
     if (["b", "s"].includes(arr[i].type)) {
       //[to do] other call types
       let t = arr[i].type === "b" ? "-" : "s";
-      svg.text(text, 24, y+yinc, t);
+      svg.text(text, 24, y+yinc-4, t);
     }
     if (arr[i].method) {
       let textx = x+(stage+1)*16;
-      svg.text(text, textx, y+yinc, arr[i].method);
+      svg.text(text, textx, y+yinc-4, arr[i].method);
     }
   }
   
