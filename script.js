@@ -78,6 +78,8 @@ let methodList;
 var queryobj;
 //stage, name (title), leadLength, plainPN, hunts, pbOrder, leadHeadCode, courseorder, stedman
 var method;
+//spliced, firstcall
+var compInfo;
 
 //includes rowzero
 /*
@@ -1325,6 +1327,7 @@ function submitform() {
   $(".results,.chute").remove();
   window.location.hash = "";
   method = null;
+  compInfo = null;
   blueBell = null;
   let form = document.getElementById("formform");
   let data = new FormData(form);
@@ -1388,7 +1391,10 @@ function resultsrouter(obj) {
       let url = obj.complibid;
       complibrouter(url, (t) => {
         title = t;
-        if (title) console.log(title);
+        if (title) {
+          console.log(title);
+          resultdisplayrouter(obj, title, queryarr);
+        }
       });
       break;
   }
@@ -1575,6 +1581,7 @@ function getcomplib(id, type, access, cb) {
       //[to do] do stuff with them!
       console.log("rows retrieved");
       console.log(results.rows.length);
+      complibrowarray(results);
       cb(results.title);
     } else {
       //something is wrong
@@ -1587,6 +1594,51 @@ function getcomplib(id, type, access, cb) {
     console.log("error retrieving complib");
     cb();
   }
+}
+
+//obj: results from complib api
+function complibrowarray(obj) {
+  rowArray = [];
+  compInfo = {};
+  if (obj.methodid) {
+    method = bigmethodarr.find(o => o.ccNum === obj.methodid);
+    //[to do] possible I won't have the method
+  } else {
+    compInfo.spliced = true;
+  }
+
+  let rows = obj.rows;
+  if (rows[rows.length-3][1] === "That's all at handstroke") rows.pop();
+
+  rows.forEach((r,i) => {
+    let row = {
+      rowNum: i === 0 ? i : i-1,
+      bells: r[0].split("").map(s => places.indexOf(s)+1)
+    };
+    if (r[1].length) row.call = r[1];
+    if (i-2 > -1) {
+      let call = rows[i-2][1];
+      if (i === 2) compInfo.firstcall = call;
+
+      if (call.length) {
+        if (["Bob", "Single", "Extreme", "Double", "BigBob"].includes(call)) {
+          //[to do] handle things other than bob and single; figure out different bobs for simulator?!
+          row.type = call[0].toLowerCase();
+        } else {
+          if (compInfo.spliced) row.method = call;
+        }
+      }
+    }
+
+    if (i === 0) {
+      rowArray.push(row);
+    } else if (i > 1) {
+      if (checkbit(r[2], 4)) row.name = "leadhead";
+      if (method && method.stedman && checkbit(r[2], 11)) row.name = "new six";
+      //[to do] other stuff I used to add
+      rowArray.push(row);
+    }
+  });
 }
 
 //get more method info
@@ -1652,6 +1704,7 @@ function routersimulator(title) {
   if (rowArray[0].rowNum === 0) {
     let extra = {rowNum: -1, row: [], bells: zero.bells};
     zero.bells.forEach(b => extra.row.push([b]));
+    //[to do] update this for complib including spliced
     let call = "Go "+(method.name && method.name.length ? method.name : "next time");
     extra.call = call;
     rowArray.unshift(extra);
@@ -3104,6 +3157,7 @@ function drawgridsvg(arr, paths, width, x) {
       }
     }
     if (["b", "s"].includes(arr[i].type)) {
+      //[to do] other call types
       let t = arr[i].type === "b" ? "-" : "s";
       svg.text(text, 24, y+yinc, t);
     }
