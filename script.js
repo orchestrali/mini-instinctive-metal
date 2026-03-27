@@ -76,8 +76,21 @@ let methodList;
 
 //form submission
 var queryobj;
-
+//stage, name (title), leadLength, plainPN, hunts, pbOrder, leadHeadCode, courseorder, stedman
 var method;
+
+//includes rowzero
+/*
+{
+  rowNum: Number,
+  bells: [],
+  name: enum("leadhead", "new six"),
+  call: "",
+  description: Boolean, only first row,
+  type: enum("bob", "single", "extreme", "double"),
+  method: ""
+}
+*/
 var rowArray;
 //individual bell (number) for gridline with describe; may be array otherwise
 var blueBell;
@@ -3445,6 +3458,18 @@ function drawnotes(rows, system, startx, blue) {
   }
   return barends;
 
+}
+
+
+//misc function
+
+//complib provides rows with a number representing 16 flags (only it's not a number, it's a string!!!!)
+//check if a particular flag is set
+function checkbit(value, bit) {
+  let num = Number(value);
+  let pow = Math.pow(2, bit);
+  let d = Math.floor(num/pow);
+  return d % 2 === 1;
 }
 
 
