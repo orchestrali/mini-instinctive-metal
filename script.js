@@ -1599,12 +1599,20 @@ function getcomplib(id, type, access, cb) {
 //obj: results from complib api
 function complibrowarray(obj) {
   rowArray = [];
-  compInfo = {};
+  compInfo = {
+    stage: obj.stage
+  };
   if (obj.methodid) {
     method = bigmethodarr.find(o => o.ccNum === obj.methodid);
     //[to do] possible I won't have the method
   } else {
     compInfo.spliced = true;
+  }
+  let tenors = [];
+  if (queryobj.tenors > 0) {
+    for (let b = obj.stage+1; b <= obj.stage+queryobj.tenors; b++) {
+      tenors.push(b);
+    }
   }
 
   let rows = obj.rows;
@@ -1615,6 +1623,7 @@ function complibrowarray(obj) {
       rowNum: i === 0 ? i : i-1,
       bells: r[0].split("").map(s => places.indexOf(s)+1)
     };
+    if (tenors.length) row.bells.push(...tenors);
     if (r[1].length) row.call = r[1];
     if (i-2 > -1) {
       let call = rows[i-2][1];
