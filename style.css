@@ -476,7 +476,7 @@
 }
 
 @media print {
-  header, form, .header {
+  header, form, .header, #loadingdiv {
     display: none;
   }
 
